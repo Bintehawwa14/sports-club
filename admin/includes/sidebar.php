@@ -28,7 +28,7 @@
                     <div class="nav-icon"><i class="fas fa-calendar-alt"></i></div>
                     <span> Manage Events</span>
                 </a>
-                <a class="custom-nav-link" href="scheduling.php">
+                <a class="custom-nav-link" href="schedule.php">
                     <div class="nav-icon"><i class="fas fa-calendar-alt"></i></div>
                     <span> Schedule Matches</span>
                 </a>

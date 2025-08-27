@@ -10,7 +10,7 @@ $result = mysqli_query($con, $sql);
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Registered Events</title>
+  <title>Registered Teams & Players</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
  <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
     <link href="../css/styles.css" rel="stylesheet" />
@@ -19,6 +19,13 @@ $result = mysqli_query($con, $sql);
     body {
       background: linear-gradient(to right, #E0F7FA, #BBDEFB, #E3F2FD);
       min-height: 100vh;
+       margin: 0;
+        padding: 0;
+        background-image: url('../images/volleyballform.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        font-family: Arial, sans-serif;
     }
     .event-card {
       border-radius: 18px;
@@ -58,7 +65,7 @@ $result = mysqli_query($con, $sql);
     <?php include_once('includes/sidebar.php'); ?>
     <div id="layoutSidenav_content">
       <main class="container-fluid px-4 mt-4">
-        <h1 class="text-center text-dark mb-5">Registered Events</h1>
+        <h1 class="text-center text-dark mb-5">Registered Teams & Players</h1>
         <div class="row g-4">
           <?php while($row = mysqli_fetch_assoc($result)) { ?>
             <div class="col-md-4">

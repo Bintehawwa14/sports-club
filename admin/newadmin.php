@@ -167,6 +167,15 @@ $stmt->bind_param("ssssss", $fname, $lname, $email, $hashed_password, $contact, 
 </html>
 <style>
 /* Custom Form Styling */
+body{
+margin: 0;
+        padding: 0;
+        background-image: url('../images/volleyballform.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        font-family: Arial, sans-serif;}
+        
 .text-center {
     text-align: center;
 }

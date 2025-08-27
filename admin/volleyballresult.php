@@ -18,10 +18,12 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
 }
 
 // Fetch volleyball matches
-$sql = "SELECT m.*, e.event_name 
+$sql = "SELECT m.id, m.event_id, m.team1_name, m.team2_name, m.round, 
+               m.match_date, m.match_status, m.team1_score, m.team2_score,
+               e.event_name 
         FROM matches m
         JOIN events e ON m.event_id = e.id
-        WHERE m.game='volleyball' 
+        WHERE m.game='volleyball' AND m.match_status = 'scheduled'
         ORDER BY m.match_date ASC, m.round ASC";
 $result = mysqli_query($con, $sql);
 
@@ -244,6 +246,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['match_id'])) {
         cursor: pointer;
         transition: background-color 0.3s ease, transform 0.2s ease;
     }
+    .back-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin-top: 15px;
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      align-items: center;
+      text-decoration: none;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+      transition: 0.3s ease-in-out;
+    }
+
+    .back-btn:hover {
+      background: linear-gradient(135deg, #ff4b2b, #ff416c);
+      transform: translateY(-3px);
+      box-shadow: 0px 6px 12px rgba(0,0,0,0.3);
+    }
         .alert-warning {
         background-color: #fff3cd; /* Light yellow background */
         border: 2px solid #ffcc00; /* Darker yellow border */
@@ -397,6 +419,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['match_id'])) {
             <?php endif; ?>
         </div>
         <button type="submit" class="submit-btn">Submit</button>
+        <a href="../user/get_event.php" class="back-btn">⬅ Back</a>
     </form>
 </div>
 
@@ -434,6 +457,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['match_id'])) {
                     </div>
                     
                     <button type="submit" class="btn btn-success">Submit Results</button>
+                    <a href="../user/get_event.php" class="back-btn">⬅ Back</a>
                 </form>
             </div>
         </div>

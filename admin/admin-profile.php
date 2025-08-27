@@ -108,11 +108,11 @@ if ($result = mysqli_fetch_array($query)) {
 <?php  ?>
 <style>
     body {
-          margin: 0;
+         margin: 0;
         padding: 0;
-        background-image: url('../images/join.png');
+        background-image: url('../images/volleyballform.jpg');
         background-size: cover;
-        background-position: top center;
+        background-position: center;
         background-repeat: no-repeat;
         font-family: Arial, sans-serif;
                 

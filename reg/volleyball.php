@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 require '../include/db_connect.php';
@@ -15,9 +16,12 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
         });
     </script>";
 }
+
 $userid = $_SESSION['userid'];
 $email = $_SESSION['email'];
-$check = "SELECT * FROM volleyball_teams  WHERE email = '$email'";
+
+// Check if user already registered for volleyball
+$check = "SELECT * FROM volleyball_teams WHERE email = '$email'";
 $exist = mysqli_query($con, $check);
 
 if ($exist && mysqli_num_rows($exist) > 0) {
@@ -26,35 +30,14 @@ if ($exist && mysqli_num_rows($exist) > 0) {
     if ($approved == "approved") {
         header("Location: ../user/dashboard.php");
         exit();
-    }else if ($approved=="pending"){
+    } else if ($approved == "pending") {
        echo "<script>
             alert('Your request for Volleyball is not approved yet!');
             window.location.href='../user/join.php';
           </script>";
-    exit();
+        exit();
     }
 }
-
-//     exit();
-// if (mysqli_num_rows($exist) > 0) {
-//     echo "<script>
-//             alert('Already registered for Volleyball');
-//             window.location.href='../user/join.php';
-//           </script>";
-//     exit();
-// }
-
-// DB connection
-// define('DB_SERVER','localhost');
-// define('DB_USER','root');
-// define('DB_PASS' ,'');
-// define('DB_NAME', 'sports-club');
-// $con = mysqli_connect(DB_SERVER, DB_USER, DB_PASS, DB_NAME);
-
-// // Check connection
-// if (mysqli_connect_errno()) {
-//     die("Failed to connect to MySQL: " . mysqli_connect_error());
-// }
 
 // Fetch user data if logged in
 $userFullName = "";
@@ -80,54 +63,22 @@ if (!$isLoggedIn) {
     exit();
 }
 
-
 // Handle form submission only when POST
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Check if already registered (on form submission)
+    $check = "SELECT * FROM volleyball_teams WHERE email = '$email'";
+    $result = mysqli_query($con, $check);
+
+    if (mysqli_num_rows($result) > 0) {
+        echo "<script>alert('⚠️ Already registered for Volleyball!'); window.location.href='../user/join.php';</script>";
+        exit();
+    }
+
     // Basic team information
-     $fullName   = $_POST['fullName'];
-     $email  = $_SESSION['email'];
+    $fullName = $_POST['fullName'];
+    $email = $_SESSION['email'];
     $team_name = mysqli_real_escape_string($con, $_POST['team_name']);
     $club_team = isset($_POST['club_team']) ? mysqli_real_escape_string($con, $_POST['club_team']) : '';
-
-
-$email = $_SESSION['email'];  // user ki email session se lo
-$team_name = mysqli_real_escape_string($con, $_POST['team_name']);
-
-// Check if already registered
-$check = "SELECT * FROM volleyball_teams WHERE email = '$email'";
-$result = mysqli_query($con, $check);
-
-if (mysqli_num_rows($result) > 0) {
-    echo "<script>alert('⚠️ Already registered for Volleyball!'); window.location.href='../user/join.php';</script>";
-    exit();
-}
-
-// --- Team Insert ---
-$insert_team = "INSERT INTO volleyball_teams (team_name, email) VALUES ('$team_name', '$email')";
-if (!$con->query($insert_team)) {
-    die("❌ Error inserting team: " . $con->error);
-}
-$team_id = $con->insert_id; // team id get for players
-
-// --- Players Insert ---
-foreach ($_POST['players'] as $player) {
-    $player_name = mysqli_real_escape_string($con, $player['name']);
-    $player_age = mysqli_real_escape_string($con, $player['age']);
-    $player_position = mysqli_real_escape_string($con, $player['position']);
-    $player_height = mysqli_real_escape_string($con, $player['height']);
-    $handedness = mysqli_real_escape_string($con, $player['handedness']);
-
-    $player_sql = "INSERT INTO volleyball_players 
-                   (team_name, player_name, age, position, height, handedness, email) 
-                   VALUES 
-                   ('$team_name', '$player_name', '$player_age', '$player_position', '$player_height', '$handedness', '$email')";
-
-    if (!$con->query($player_sql)) {
-        echo "❌ Error inserting player: " . $con->error . "<br>";
-    }
-}}
-
-echo "<script>alert('✅ Volleyball Team Registered Successfully!'); window.location.href='../user/join.php';</script>";
     
     // Captain information
     $captain_name = mysqli_real_escape_string($con, $_POST['captain_name']);
@@ -139,21 +90,21 @@ echo "<script>alert('✅ Volleyball Team Registered Successfully!'); window.loca
     $captain_block_jump = !empty($_POST['captain_block_jump']) ? (int)$_POST['captain_block_jump'] : NULL;
     $captain_approach_jump = !empty($_POST['captain_approach_jump']) ? (int)$_POST['captain_approach_jump'] : NULL;
     
-    // Captain health information - FIXED field names
+    // Captain health information
     $captain_chronic_illness = isset($_POST['captain_chronic_illness']) ? mysqli_real_escape_string($con, $_POST['captain_chronic_illness']) : '';
     $captain_allergies = isset($_POST['captain_allergies']) ? mysqli_real_escape_string($con, $_POST['captain_allergies']) : '';
     $captain_medications = isset($_POST['captain_medications']) ? mysqli_real_escape_string($con, $_POST['captain_medications']) : '';
     $captain_surgeries = isset($_POST['captain_surgeries']) ? mysqli_real_escape_string($con, $_POST['captain_surgeries']) : '';
     $captain_previous_injuries = isset($_POST['captain_previous_injuries']) ? mysqli_real_escape_string($con, $_POST['captain_previous_injuries']) : '';
     
-    // Insert team and captain data into database
+    // Insert team data into database
     $team_sql = "INSERT INTO volleyball_teams 
-                 (fullName,email,team_name, club_team, captain_name, captain_age, captain_height, 
+                 (fullName, email, team_name, club_team, captain_name, captain_age, captain_height, 
                   captain_handed, captain_position, captain_standing_reach, 
                   captain_block_jump, captain_approach_jump, captain_chronic_illness, 
                   captain_allergies, captain_medications, captain_surgeries, captain_previous_injuries) 
                  VALUES 
-                 ('$fullName','email','$team_name', '$club_team', '$captain_name', '$captain_age', '$captain_height', 
+                 ('$fullName', '$email', '$team_name', '$club_team', '$captain_name', '$captain_age', '$captain_height', 
                   '$captain_handed', '$captain_position', '$captain_standing_reach', 
                   '$captain_block_jump', '$captain_approach_jump', '$captain_chronic_illness', 
                   '$captain_allergies', '$captain_medications', '$captain_surgeries', '$captain_previous_injuries')";
@@ -192,50 +143,34 @@ echo "<script>alert('✅ Volleyball Team Registered Successfully!'); window.loca
             $medication = mysqli_real_escape_string($con, $medications[$i]);
             $surgery = mysqli_real_escape_string($con, $surgeries[$i]);
             $previous_injury = mysqli_real_escape_string($con, $previous_injuries[$i]);
-            // Pehle team insert karo agar already exist nahi hai
-$check_team = "SELECT * FROM volleyball_teams WHERE team_name = '$team_name'";
-$result = $con->query($check_team);
-
-if (mysqli_num_rows($result) == 0) {
-    $team_sql = "INSERT INTO volleyball_teams (team_name, email) 
-                 VALUES ('$team_name', '$email')";
-    if (!$con->query($team_sql)) {
-        echo "❌ Error inserting team: " . $con->error . "<br>";
-    }
-}
-echo "<script>alert('✅ Volleyball Team Registered Successfully!'); window.location.href='../user/join.php';</script>";
-
-// Ab players insert karo
-// email teams table se fetch karo
-$row = mysqli_fetch_assoc($result);
-$email = $row['email'];
-
 
             // Insert player with health information
-           $player_sql = "INSERT INTO volleyball_players 
-               (team_name, player_name, age, position, height, handedness, weight, 
-                standing_reach, block_jump, approach_jump, chronic_illness, 
-                allergies, medications, surgeries, previous_injuries, email) 
-               VALUES 
-               ('$team_name', '$player_name', '$player_age', '$player_position', '$player_height', 
-                '$handedness', " . ($player_weight !== NULL ? "'$player_weight'" : "NULL") . ", 
-                " . ($standing_reach !== NULL ? "'$standing_reach'" : "NULL") . ", 
-                " . ($block_jump !== NULL ? "'$block_jump'" : "NULL") . ", 
-                " . ($approach_jump !== NULL ? "'$approach_jump'" : "NULL") . ", 
-                '$chronic_illness', '$allergy', '$medication', '$surgery', '$previous_injury', '$email')";
+            $player_sql = "INSERT INTO volleyball_players 
+                           (team_name, player_name, age, position, height, handedness, weight, 
+                            standing_reach, block_jump, approach_jump, chronic_illness, 
+                            allergies, medications, surgeries, previous_injuries, email) 
+                           VALUES 
+                           ('$team_name', '$player_name', '$player_age', '$player_position', '$player_height', 
+                            '$handedness', " . ($player_weight !== NULL ? "'$player_weight'" : "NULL") . ", 
+                            " . ($standing_reach !== NULL ? "'$standing_reach'" : "NULL") . ", 
+                            " . ($block_jump !== NULL ? "'$block_jump'" : "NULL") . ", 
+                            " . ($approach_jump !== NULL ? "'$approach_jump'" : "NULL") . ", 
+                            '$chronic_illness', '$allergy', '$medication', '$surgery', '$previous_injury', '$email')";
 
-if (!$con->query($player_sql)) {
-    echo "❌ Error inserting player: " . $con->error . "<br>";
-
+            if (!$con->query($player_sql)) {
+                echo "❌ Error inserting player: " . $con->error . "<br>";
+            }
+        }
+        
         // Redirect to success page
         header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
         exit();
     } else {
         echo "❌ Error: " . $con->error;
     }
-}}
+}
 ?>
-
+   
 
 <!DOCTYPE html>
 <html lang="en">

@@ -18,13 +18,6 @@ $result = mysqli_query($con, $sql);
   <style>
     body {
       background: linear-gradient(to right, #E0F7FA, #BBDEFB, #E3F2FD);
-      margin: 0;
-        padding: 0;
-        background-image: url('../images/volleyballform.jpg');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        font-family: Arial, sans-serif;
       min-height: 100vh;
     }
     .event-card {
@@ -65,7 +58,7 @@ $result = mysqli_query($con, $sql);
     <?php include_once('includes/sidebar.php'); ?>
     <div id="layoutSidenav_content">
       <main class="container-fluid px-4 mt-4">
-        <h1 class="text-center text-dark mb-5">Update Results</h1>
+        <h1 class="text-center text-dark mb-5">Schedule Matches</h1>
         <div class="row g-4">
           <?php while($row = mysqli_fetch_assoc($result)) { ?>
             <div class="col-md-4">
@@ -76,7 +69,7 @@ $result = mysqli_query($con, $sql);
                 
                 </div>
                 <div class="card-footer text-center bg-light">
-                  <a href="update-result.php "class="btn btn-detail">Update results</a>
+                  <a href="scheduling.php "class="btn btn-detail">Schedule Matches</a>
                 </div>
               </div>
             </div>

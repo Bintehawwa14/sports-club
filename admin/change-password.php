@@ -113,7 +113,15 @@ document.changepassword.confirmpassword.focus();
         border-radius: 8px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
-
+     body{
+        margin: 0;
+        padding: 0;
+        background-image: url('../images/volleyballform.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        font-family: Arial, sans-serif;
+     }
     h1 {
         font-size: 28px;
         margin-bottom: 20px;

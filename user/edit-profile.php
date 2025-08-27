@@ -27,10 +27,7 @@ if (isset($_POST['update'])) {
         echo "<script>alert('Profile update failed.');</script>";
     }
 }
-
-
-
-    
+  
 ?>
 <!DOCTYPE html>
 <html lang="en">
