@@ -1,43 +1,62 @@
 <?php
+// Clear output buffer to prevent accidental output
+ob_clean();
+
 include_once('../../include/db_connect.php');
 
-if (isset($_POST['is_approved']) && isset($_POST['team_name']) && isset($_POST['game'])) {
-    $team_name = mysqli_real_escape_string($con, $_POST['teamName']);
-    $status = mysqli_real_escape_string($con, $_POST['is_approved']);
-    $game = mysqli_real_escape_string($con, $_POST['game']); // volleyball
+// Set JSON header
+header('Content-Type: application/json');
 
-     $team_table =  "badminton_players";
-    $player_table = $game . "_players";
+$response = ['success' => false, 'error' => '', 'team_status' => ''];
 
-    // Individual player approval
-    if (isset($_POST['player_name'])) {
-        $player_name = mysqli_real_escape_string($con, $_POST['player_name']);
-        mysqli_query($con, "UPDATE $team_table SET is_approved='$status' 
-                            WHERE player1='$player_name' AND teamName='$team_name'");
-        
-         $checkPlayers = "SELECT COUNT(*) as pending_count 
-                         FROM $player_table 
-                         WHERE teamName='$team_name' AND is_approved='pending'";
-        $res = mysqli_query($con, $checkPlayers);
-        $row = mysqli_fetch_assoc($res);
-
-     if ($row['pending_count'] > 0) {
-            mysqli_query($con, "UPDATE $team_table SET is_approved='pending' WHERE teamName='$team_name'");
-        } else {
-            mysqli_query($con, "UPDATE $team_table SET is_approved='approved' WHERE teamName='$team_name'");
-        }
-    }
-    // Optional: If you want a full team approval button, use this block
-    elseif (isset($_POST['approve_team'])) {
-        mysqli_query($con, "UPDATE $player_table SET is_approved='$status' WHERE teamName='$team_name'");
+try {
+    // Check required POST parameters
+    if (!isset($_POST['is_approved'], $_POST['team_name'], $_POST['game'])) {
+        throw new Exception('Invalid request: Missing required parameters');
     }
 
-       header("Location: all_teams.php");
-    // Redirect back
-    if (isset($_POST['redirect_back'])) {
-        header("Location: " . $_POST['redirect_back']);
-        exit();
-    } 
-} 
-    
+    $team_name = $_POST['team_name'];
+    $status = $_POST['is_approved'];
+    $game = $_POST['game'];
+
+    if ($game !== 'badminton') {
+        throw new Exception('Invalid game type');
+    }
+
+    $player_table = "badminton_players";
+
+    // Update team approval status in badminton_players
+    $stmt = $con->prepare("UPDATE $player_table SET is_approved = ? WHERE teamName = ?");
+    if (!$stmt) {
+        throw new Exception('Failed to prepare update statement: ' . $con->error);
+    }
+    $stmt->bind_param("ss", $status, $team_name);
+    $success = $stmt->execute();
+    if (!$success) {
+        throw new Exception('Failed to update team approval status: ' . $stmt->error);
+    }
+
+    // Check team status
+    $stmt_check = $con->prepare("SELECT is_approved FROM $player_table WHERE teamName = ?");
+    if (!$stmt_check) {
+        throw new Exception('Failed to prepare check statement: ' . $con->error);
+    }
+    $stmt_check->bind_param("s", $team_name);
+    $stmt_check->execute();
+    $check_result = $stmt_check->get_result();
+    $row = $check_result->fetch_assoc();
+
+    $team_status = $row['is_approved'] ?? 'pending';
+
+    $response['success'] = true;
+    $response['team_status'] = $team_status;
+
+} catch (Exception $e) {
+    // Log error for debugging (adjust path to a valid writable path)
+    error_log(date('Y-m-d H:i:s') . ' - ' . $e->getMessage() . PHP_EOL, 3, './error.log');
+    $response['error'] = 'Server error occurred';
+}
+
+echo json_encode($response);
+exit();
 ?>

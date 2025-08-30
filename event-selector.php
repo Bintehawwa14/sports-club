@@ -63,10 +63,12 @@ require 'include/nav-bar.php';
       display: grid;
       gap: 16px;
       grid-template-columns: 1fr;
+      justify-items: center; /* Centers items horizontally */
     }
     @media (min-width: 768px) {
       .grid {
         grid-template-columns: repeat(3, 1fr);
+        justify-items: center; /* Centers items horizontally on medium screens and above */
       }
     }
     label {
@@ -75,9 +77,10 @@ require 'include/nav-bar.php';
       font-weight: 500;
       margin: 8px 0 4px;
       color: var(--text);
+      text-align: center; /* Centers label text */
     }
     select {
-      width: 100%;
+      width: 80%; /* Reduces width to create space, adjustable as needed */
       padding: 12px 16px;
       border-radius: 12px;
       border: 1px solid var(--border);
@@ -87,10 +90,10 @@ require 'include/nav-bar.php';
       outline: none;
       transition: all 0.2s ease;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 12px center;
       background-size: 18px;
+      margin: 0 auto; /* Centers the select element */
     }
     select:focus {
       border-color: var(--primary);
@@ -98,12 +101,14 @@ require 'include/nav-bar.php';
     }
     .row {
       margin-top: 8px;
+      text-align: center; /* Centers the row content */
     }
     .actions {
       display: flex;
       gap: 12px;
       margin-top: 16px;
       flex-wrap: wrap;
+      justify-content: center; /* Centers the buttons */
     }
     .btn {
       padding: 12px 20px;

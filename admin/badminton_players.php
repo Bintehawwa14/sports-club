@@ -1,16 +1,11 @@
 <?php session_start();
 include_once('../include/db_connect.php');
 
-// for deleting user
-if(isset($_GET['id']))
-{
-$adminid=$_GET['id'];
-$msg=mysqli_query($con,"delete from users where id='$adminid'");
-if($msg)
-{
-echo "<script>alert('Data deleted');</script>";
-}
-}
+$badmintonTeams = mysqli_query($con, "SELECT fullName,email,role,teamName,player1,dob1,height1,
+weight1,chronic_illness1,allergies1,medications1,surgeries1,
+previous_injuries1,height2,weight2,chronic_illness2,allergies2,
+medications2,surgeries2,previous_injuries2,player2,dob2,category,game, is_approved 
+FROM badminton_players");
    ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,43 +26,101 @@ echo "<script>alert('Data deleted');</script>";
         <div id="layoutSidenav">
          <?php include_once('includes/sidebar.php');?>
             <div id="layoutSidenav_content">
-                <main>
-                    <div class="container-fluid px-4">
-                        <h1 class="mt-4">Registered Badminton players/Teams</h1>
-                       
+               
+<!-- Badminton Teams -->
+<h3>Badminton Teams</h3>
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Full Name</th>
+            <th>Team Name</th>
+            <th>Email</th>
+            <th>Player 1</th>
+            <th>Player 2</th>
+            <th>Role</th>
+            <th>Game</th>
+            <th>Status</th>
             
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <i class="fas fa-table me-1"></i>
-                                Registered Badminton players/teams Details
-                            </div>
-                            <div class="card-body">
-                                <table id="datatablesSimple">
-                                    <thead>
-                                        
-                                  <tr>
-                                  <th>Sno.</th>
-                                  <th>Full Name</th>
-                                  <th> Email</th>
-                                  <th> Game</th>
-                                  <th> Role</th>
-                                  </tr>
-                                    </tfoot>
-                                    <tbody>
-                                <?php $ret=mysqli_query($con,"select * from badminton_players");
-                                $cnt=1;
-                                while($row=mysqli_fetch_array($ret))
-                              {?>
-                              <tr>
-                              <td><?php echo $cnt;?></td>
-                                  <td><?php echo $row['fullName'];?></td>
-                                  <td><?php echo $row['email'];?></td>
-                                  <td><?php echo $row['game'];?></td>
-                                  <td><?php echo $row['role'];?></td>  
-                                
-                                  
-                              </tr>
-                              <?php $cnt=$cnt+1; }?>
+        </tr>
+    </thead>
+    <tbody>
+          <?php 
+        mysqli_data_seek($badmintonTeams, 0);
+        while($row = mysqli_fetch_assoc($badmintonTeams)) 
+            if(strtolower($row['role']) == 'team') {
+                $status = isset($row['is_approved']) ? $row['is_approved'] : 'pending';
+        ?>
+            <tr>
+                <td><?= htmlspecialchars($row['fullName']); ?></td>
+                <td><?= htmlspecialchars($row['teamName']); ?></td>
+                <td><?= htmlspecialchars($row['email']); ?></td>
+                <td><?= htmlspecialchars($row['player1']); ?></td>
+                <td><?= htmlspecialchars($row['player2']); ?></td>
+                <td><?= htmlspecialchars($row['role']); ?></td>
+                <td><?= htmlspecialchars($row['game']); ?></td>
+                <td>
+                    <!-- Approve dropdown -->
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="badminton">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
+                
+               
+            </tr>
+        
+        <?php } ?>
+    </tbody>
+</table>
+
+<!-- Badminton Players-->
+<h3>Badminton Players</h3>
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Player</th>
+            <th>Role</th>
+            <th>Game</th>
+            <th>Status</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+         <?php 
+        mysqli_data_seek($badmintonTeams, 0);
+        while($row = mysqli_fetch_assoc($badmintonTeams)) 
+            if(strtolower($row['role']) == 'player') {
+                $status = isset($row['is_approved']) ? $row['is_approved'] : 'pending';
+        ?>
+            <tr>
+                <td><?= htmlspecialchars($row['fullName']); ?></td>
+                <td><?= htmlspecialchars($row['email']); ?></td>
+                <td><?= htmlspecialchars($row['player1']); ?></td>
+                <td><?= htmlspecialchars($row['role']); ?></td>
+                <td><?= htmlspecialchars($row['game']); ?></td>
+                <td>
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="badminton">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
+               
+            </tr>
+        <?php } ?>
+    </tbody>
+</table>
                                   
                                 </table>
                             <a class="btn btn-sm btn-primary edit-link" href="badminton_scheduling.php">Single Elimination</a>

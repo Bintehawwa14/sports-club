@@ -17,11 +17,35 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
     </script>";
 }
 
+// Fetch event_name from events table using event_id or event_name
+$event_id = mysqli_real_escape_string($con, $_GET['event_id'] ?? 0);
+$event_name = mysqli_real_escape_string($con, $_GET['event_name'] ?? '');
+
+if ($event_id) {
+    $eventQuery = mysqli_query($con, "SELECT event_name FROM events WHERE id='$event_id'");
+    if ($eventQuery && mysqli_num_rows($eventQuery) > 0) {
+        $eventRow = mysqli_fetch_assoc($eventQuery);
+        $event_name = $eventRow['event_name'];
+    } else {
+        echo "<script>alert('Invalid event ID. Please select a valid event.'); window.location.href='../user/get_event.php';</script>";
+        exit();
+    }
+} elseif ($event_name) {
+    $eventQuery = mysqli_query($con, "SELECT event_name FROM events WHERE event_name='$event_name' AND status='active'");
+    if ($eventQuery && mysqli_num_rows($eventQuery) == 0) {
+        echo "<script>alert('Invalid event name. Please select a valid event.'); window.location.href='../user/get_event.php';</script>";
+        exit();
+    }
+} else {
+    echo "<script>alert('No event ID or name provided. Please select an event.'); window.location.href='../user/get_event.php';</script>";
+    exit();
+}
+
 $userid = $_SESSION['userid'];
 $email = $_SESSION['email'];
 
 // Check if user already registered for volleyball
-$check = "SELECT * FROM volleyball_teams WHERE email = '$email'";
+$check = "SELECT * FROM volleyball_teams WHERE email = '$email' AND event_name = '$event_name'";
 $exist = mysqli_query($con, $check);
 
 if ($exist && mysqli_num_rows($exist) > 0) {
@@ -31,10 +55,9 @@ if ($exist && mysqli_num_rows($exist) > 0) {
         header("Location: ../user/dashboard.php");
         exit();
     } else if ($approved == "pending") {
-       echo "<script>
+        echo "<script>
             alert('Your request for Volleyball is not approved yet!');
-            window.location.href='../user/join.php';
-          </script>";
+            window.location.href='../user/join.php?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
         exit();
     }
 }
@@ -45,13 +68,13 @@ $userEmail = "";
 $isLoggedIn = false;
 
 if (isset($_SESSION['userid'])) {
-    $userId = $_SESSION['userid'];  // match the session key
+    $userId = $_SESSION['userid'];
     $userQuery = "SELECT fname, lname, email FROM users WHERE id = '$userId'";
     $userResult = mysqli_query($con, $userQuery);
 
     if ($userResult && mysqli_num_rows($userResult) > 0) {
         $userData = mysqli_fetch_assoc($userResult);
-        $userFullName = $userData['fname'] . ' ' . $userData['lname'];  
+        $userFullName = $userData['fname'] . ' ' . $userData['lname'];
         $userEmail = $userData['email'];
         $isLoggedIn = true;
     }
@@ -66,16 +89,16 @@ if (!$isLoggedIn) {
 // Handle form submission only when POST
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Check if already registered (on form submission)
-    $check = "SELECT * FROM volleyball_teams WHERE email = '$email'";
+    $check = "SELECT * FROM volleyball_teams WHERE email = '$email' AND event_name = '$event_name'";
     $result = mysqli_query($con, $check);
 
     if (mysqli_num_rows($result) > 0) {
-        echo "<script>alert('⚠️ Already registered for Volleyball!'); window.location.href='../user/join.php';</script>";
+        echo "<script>alert('⚠️ Already registered for Volleyball for this event!'); window.location.href='../user/join.php?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
         exit();
     }
 
     // Basic team information
-    $fullName = $_POST['fullName'];
+    $fullName = mysqli_real_escape_string($con, $_POST['fullName']);
     $email = $_SESSION['email'];
     $team_name = mysqli_real_escape_string($con, $_POST['team_name']);
     $club_team = isset($_POST['club_team']) ? mysqli_real_escape_string($con, $_POST['club_team']) : '';
@@ -99,14 +122,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     // Insert team data into database
     $team_sql = "INSERT INTO volleyball_teams 
-                 (fullName, email, team_name, club_team, captain_name, captain_age, captain_height, 
+                 (event_name, fullName, email, team_name, club_team, captain_name, captain_age, captain_height, 
                   captain_handed, captain_position, captain_standing_reach, 
                   captain_block_jump, captain_approach_jump, captain_chronic_illness, 
                   captain_allergies, captain_medications, captain_surgeries, captain_previous_injuries) 
                  VALUES 
-                 ('$fullName', '$email', '$team_name', '$club_team', '$captain_name', '$captain_age', '$captain_height', 
-                  '$captain_handed', '$captain_position', '$captain_standing_reach', 
-                  '$captain_block_jump', '$captain_approach_jump', '$captain_chronic_illness', 
+                 ('$event_name', '$fullName', '$email', '$team_name', '$club_team', '$captain_name', '$captain_age', '$captain_height', 
+                  '$captain_handed', '$captain_position', " . ($captain_standing_reach !== NULL ? "'$captain_standing_reach'" : "NULL") . ", 
+                  " . ($captain_block_jump !== NULL ? "'$captain_block_jump'" : "NULL") . ", 
+                  " . ($captain_approach_jump !== NULL ? "'$captain_approach_jump'" : "NULL") . ", '$captain_chronic_illness', 
                   '$captain_allergies', '$captain_medications', '$captain_surgeries', '$captain_previous_injuries')";
     
     if ($con->query($team_sql)) {
@@ -146,31 +170,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             // Insert player with health information
             $player_sql = "INSERT INTO volleyball_players 
-                           (team_name, player_name, age, position, height, handedness, weight, 
+                           (event_name, team_name, player_name, age, position, height, handedness, weight, 
                             standing_reach, block_jump, approach_jump, chronic_illness, 
                             allergies, medications, surgeries, previous_injuries, email) 
                            VALUES 
-                           ('$team_name', '$player_name', '$player_age', '$player_position', '$player_height', 
+                           ('$event_name', '$team_name', '$player_name', '$player_age', '$player_position', '$player_height', 
                             '$handedness', " . ($player_weight !== NULL ? "'$player_weight'" : "NULL") . ", 
                             " . ($standing_reach !== NULL ? "'$standing_reach'" : "NULL") . ", 
                             " . ($block_jump !== NULL ? "'$block_jump'" : "NULL") . ", 
                             " . ($approach_jump !== NULL ? "'$approach_jump'" : "NULL") . ", 
                             '$chronic_illness', '$allergy', '$medication', '$surgery', '$previous_injury', '$email')";
-
             if (!$con->query($player_sql)) {
                 echo "❌ Error inserting player: " . $con->error . "<br>";
             }
         }
         
         // Redirect to success page
-        header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
+        header("Location: " . $_SERVER['PHP_SELF'] . "?success=1&event_id=$event_id&event_name=".urlencode($event_name));
         exit();
     } else {
         echo "❌ Error: " . $con->error;
     }
 }
 ?>
-   
 
 <!DOCTYPE html>
 <html lang="en">
@@ -180,7 +202,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Volleyball Team Registration</title>
   <style>
-    /* ===== Global Styling ===== */
+    /* [Existing CSS remains unchanged] */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
@@ -196,7 +218,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       background-attachment: fixed;
     }
 
-    /* ===== Form Styling ===== */
     .form-container {
       width: 95%;
       max-width: 1000px;
@@ -221,25 +242,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       margin-bottom: 25px;
       font-size: 32px;
     }
-        form {
-        display: flex;
-        flex-direction: column;
-        gap: 25px;
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
     }
     .form-section {
-        border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        background: #f9f9f9;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 8px;
+      background: #f9f9f9;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
     }
     .form-section h3 {
-        margin-top: 0;
-        margin-bottom: 15px;
-        color: #b21f1f;
-        font-size: 20px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #eee;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #b21f1f;
+      font-size: 20px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
     }
     .form-group {
       margin-bottom: 20px;
@@ -247,7 +268,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     .captain-group, .player-group {
       margin-bottom: 20px;
-      padding: 15px; /* Increased padding */
+      padding: 15px;
       border: 1px solid #e0e0e0;
       border-radius: 8px;
       background: #f5f5f5;
@@ -255,37 +276,37 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     .captain-group h4, .player-group h4 {
       margin-top: 0;
-      margin-bottom: 15px; /* Increased margin */
+      margin-bottom: 15px;
       color: #b21f1f;
-      font-size: 22px; /* Increased font size */
+      font-size: 22px;
       padding-bottom: 12px;
       border-bottom: 2px solid #ddd;
     }
 
     .player-group h5 {
       margin-top: 0;
-      margin-bottom: 18px; /* Increased margin */
+      margin-bottom: 18px;
       color: #b21f1f;
-      font-size: 20px; /* Increased font size */
+      font-size: 20px;
       padding-bottom: 6px;
       border-bottom: 1px solid #ddd;
     }
 
-        label {
-        display: block;
-        font-weight: bold;
-        margin-bottom: 8px; /* Increased margin */
-        color: #333;
-        font-size: 16px; /* Slightly larger font */
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 16px;
     }
     input, select, textarea {
       width: 100%;
-      padding: 14px; /* Increased padding */
+      padding: 14px;
       border: 2px solid #ddd;
       border-radius: 8px;
       background-color: rgba(255, 255, 255, 0.95);
       font-size: 16px;
-      height: 46px; /* Slightly taller */
+      height: 46px;
       box-sizing: border-box;
       transition: border-color 0.3s;
     }
@@ -301,7 +322,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       resize: vertical;
     }
 
-    /* ===== Grid Layouts ===== */
     .grid-2 {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -317,23 +337,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     .grid-4 {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 18px; /* Slightly larger gap */
+      gap: 18px;
       margin-bottom: 15px;
     }
 
     .captain-health-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 18px; /* Slightly larger gap */
-      margin-top: 18px; /* Increased margin */
-      padding-top: 18px; /* Increased padding */
+      gap: 18px;
+      margin-top: 18px;
+      padding-top: 18px;
       border-top: 1px dashed #ddd;
     }
 
     .players-container {
       max-height: 600px;
       overflow-y: auto;
-      padding: 15px; /* Increased padding */
+      padding: 15px;
       border: 1px solid #ddd;
       border-radius: 8px;
       background: #fff;
@@ -341,49 +361,48 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
     .player-entry {
       border: 2px solid rgba(255,255,255,0.2);
-      padding: 25px; /* Increased padding */
+      padding: 25px;
       border-radius: 10px;
       background: rgba(255,255,255,0.15);
-      margin-bottom: 25px; /* Increased margin */
+      margin-bottom: 25px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     .player-entry h4 {
-      color: #228B22; /* Changed to green color */
+      color: #228B22;
       margin-top: 0;
-      margin-bottom: 20px; /* Increased margin */
+      margin-bottom: 20px;
       padding-bottom: 8px;
       border-bottom: 2px solid rgba(255,255,255,0.2);
-      font-size: 20px; /* Increased font size */
+      font-size: 20px;
     }
 
     .player-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 18px; /* Slightly larger gap */
+      gap: 18px;
     }
 
     .jump-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 18px; /* Slightly larger gap */
-      margin-top: 18px; /* Increased margin */
-      padding-top: 18px; /* Increased padding */
+      gap: 18px;
+      margin-top: 18px;
+      padding-top: 18px;
     }
 
     .health-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 18px; /* Slightly larger gap */
-      margin-top: 18px; /* Increased margin */
-      padding-top: 18px; /* Increased padding */
+      gap: 18px;
+      margin-top: 18px;
+      padding-top: 18px;
       border-top: 1px solid rgba(255,255,255,0.2);
     }
 
-    /* ===== Buttons ===== */
     .button-container {
       display: flex;
-      gap: 18px; /* Slightly larger gap */
+      gap: 18px;
       margin-top: 20px;
     }
 
@@ -392,7 +411,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       color: white;
       border: none;
       border-radius: 8px;
-      padding: 14px 22px; /* Increased padding */
+      padding: 14px 22px;
       cursor: pointer;
       font-size: 16px;
       font-weight: bold;
@@ -413,16 +432,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
     .health-grid div,
     .captain-health-grid div {
-      margin-bottom: 18px; /* Increased margin */
+      margin-bottom: 18px;
     }
 
     .health-grid label,
     .captain-health-grid label {
       display: block;
-      margin-bottom: 8px; /* Increased margin */
+      margin-bottom: 8px;
       font-weight: bold;
       color: #0e0d0dff;
-      font-size: 16px; /* Slightly larger font */
+      font-size: 16px;
     }
 
     .health-grid select,
@@ -430,21 +449,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     .captain-health-grid select,
     .captain-health-grid input {
       width: 100%;
-      padding: 10px; /* Increased padding */
+      padding: 10px;
       border: 1px solid #ddd;
       border-radius: 4px;
-      font-size: 15px; /* Slightly larger font */
+      font-size: 15px;
     }
     .submit-btn {
       background: linear-gradient(135deg, #28a745, #218838);
       color: white;
       border: none;
-      padding: 16px 28px; /* Increased padding */
+      padding: 16px 28px;
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
       border-radius: 8px;
-      margin-top: 25px; /* Increased margin */
+      margin-top: 25px;
       transition: transform 0.3s, box-shadow 0.3s;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       width: 100%;
@@ -458,8 +477,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     .back-btn {
       display: inline-block;
-      padding: 14px 28px; /* Increased padding */
-      margin-top: 25px; /* Increased margin */
+      padding: 14px 28px;
+      margin-top: 25px;
       background: linear-gradient(135deg, #ff416c, #ff4b2b);
       color: white;
       font-size: 16px;
@@ -483,9 +502,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     .jump-info {
-      font-size: 13px; /* Slightly larger font */
+      font-size: 13px;
       color: #666;
-      margin-top: 6px; /* Increased margin */
+      margin-top: 6px;
     }
     .health-cert-notice {
       background-color: #fff3cd;
@@ -500,7 +519,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     .eligibility-link {
       text-align: center;
       margin-bottom: 15px;
-      color:white;
+      color: white;
     }
     
     .eligibility-link a {
@@ -513,7 +532,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       text-decoration: underline;
     }
 
-    /* ===== Responsive Design ===== */
     @media (max-width: 768px) {
       .grid-2, .grid-3, .grid-4, .player-grid, .jump-grid, .health-grid, .captain-health-grid {
         grid-template-columns: 1fr;
@@ -555,22 +573,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     </div>
     
     <form method="POST" id="volleyballForm">
+      <input type="hidden" name="event_name" id="event_name" value="<?php echo htmlspecialchars($event_name); ?>">
+
       <!-- Team Information -->
       <div class="form-section">
         <h3 class="section-title">Team Information</h3>
         <div class="grid-2">
-         <div>
-    <label for="fullName" class="required">Full Name:</label>
-    <input type="text" id="fullName" name="fullName"  
-           value="<?php echo htmlspecialchars($userFullName); ?>" 
-           required readonly>
-</div>
-<div>
-    <label for="email" class="required">Email Address:</label>
-    <input type="email" id="email" name="email"  
-           value="<?php echo htmlspecialchars($userEmail); ?>" 
-           required readonly>
-</div>
+          <div>
+            <label for="fullName" class="required">Full Name:</label>
+            <input type="text" id="fullName" name="fullName" value="<?php echo htmlspecialchars($userFullName); ?>" required readonly>
+          </div>
+          <div>
+            <label for="email" class="required">Email Address:</label>
+            <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($userEmail); ?>" required readonly>
+          </div>
           <div class="form-group">
             <label for="team_name" class="required">Team Name:</label>
             <input type="text" id="team_name" name="team_name" required>
@@ -719,10 +735,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       <button type="submit" class="submit-btn">Submit Registration</button>
     </form>
     
-    <a href="../user/get_event.php" class="back-btn">⬅ Back to Dashboard</a>
+    <a href="../user/join.php?event_id=<?php echo $event_id; ?>&event_name=<?php echo urlencode($event_name); ?>" class="back-btn">⬅ Back</a>
   </div>
 
- <script>
+  <script>
     // Jump range data based on position
     const positionJumpRanges = {
       'outside': {
@@ -759,21 +775,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       const ranges = positionJumpRanges[position];
       if (!ranges) return;
       
-      // Update the input fields with the average values
-      document.getElementById(`${playerType}-standing-reach`).value = 
-        Math.round((ranges.standing.min + ranges.standing.max) / 2);
-      document.getElementById(`${playerType}-block-jump`).value = 
-        Math.round((ranges.block.min + ranges.block.max) / 2);
-      document.getElementById(`${playerType}-approach-jump`).value = 
-        Math.round((ranges.approach.min + ranges.approach.max) / 2);
+      document.getElementById(`${playerType}-standing-reach`).value = Math.round((ranges.standing.min + ranges.standing.max) / 2);
+      document.getElementById(`${playerType}-block-jump`).value = Math.round((ranges.block.min + ranges.block.max) / 2);
+      document.getElementById(`${playerType}-approach-jump`).value = Math.round((ranges.approach.min + ranges.approach.max) / 2);
       
-      // Update the info text
-      document.getElementById(`${playerType}-standing-info`).textContent = 
-        `Range: ${ranges.standing.min}-${ranges.standing.max} cm`;
-      document.getElementById(`${playerType}-block-info`).textContent = 
-        `Range: ${ranges.block.min}-${ranges.block.max} cm`;
-      document.getElementById(`${playerType}-approach-info`).textContent = 
-        `Range: ${ranges.approach.min}-${ranges.approach.max} cm`;
+      document.getElementById(`${playerType}-standing-info`).textContent = `Range: ${ranges.standing.min}-${ranges.standing.max} cm`;
+      document.getElementById(`${playerType}-block-info`).textContent = `Range: ${ranges.block.min}-${ranges.block.max} cm`;
+      document.getElementById(`${playerType}-approach-info`).textContent = `Range: ${ranges.approach.min}-${ranges.approach.max} cm`;
     }
 
     // Function to update player jump ranges
@@ -786,21 +794,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       const ranges = positionJumpRanges[position];
       if (!ranges) return;
       
-      // Update the input fields with the average values
-      playerEntry.querySelector('.standing-reach-input').value = 
-        Math.round((ranges.standing.min + ranges.standing.max) / 2);
-      playerEntry.querySelector('.block-jump-input').value = 
-        Math.round((ranges.block.min + ranges.block.max) / 2);
-      playerEntry.querySelector('.approach-jump-input').value = 
-        Math.round((ranges.approach.min + ranges.approach.max) / 2);
+      playerEntry.querySelector('.standing-reach-input').value = Math.round((ranges.standing.min + ranges.standing.max) / 2);
+      playerEntry.querySelector('.block-jump-input').value = Math.round((ranges.block.min + ranges.block.max) / 2);
+      playerEntry.querySelector('.approach-jump-input').value = Math.round((ranges.approach.min + ranges.approach.max) / 2);
       
-      // Update the info text
-      playerEntry.querySelector('.standing-info').textContent = 
-        `Range: ${ranges.standing.min}-${ranges.standing.max} cm`;
-      playerEntry.querySelector('.block-info').textContent = 
-        `Range: ${ranges.block.min}-${ranges.block.max} cm`;
-      playerEntry.querySelector('.approach-info').textContent = 
-        `Range: ${ranges.approach.min}-${ranges.approach.max} cm`;
+      playerEntry.querySelector('.standing-info').textContent = `Range: ${ranges.standing.min}-${ranges.standing.max} cm`;
+      playerEntry.querySelector('.block-info').textContent = `Range: ${ranges.block.min}-${ranges.block.max} cm`;
+      playerEntry.querySelector('.approach-info').textContent = `Range: ${ranges.approach.min}-${ranges.approach.max} cm`;
     }
 
     // Function to toggle captain chronic illness field
@@ -852,7 +852,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           <h5>Basic Information</h5>
           <div class="grid-4">
             <div>
-              <input type="text" name="player_name[]" placeholder="Player Name*" required>
+              <input type="text" name="player_name[]" placeholder="Player Name*" required oninput="validatePlayerName(this)">
             </div>
             <div>
               <input type="number" name="player_age[]" placeholder="Age*" min="16" max="23" required>
@@ -928,8 +928,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <!-- Allergies -->
             <div>
               <label>Allergies:</label>
-                <input type="text" name="player_allergies[]" placeholder="Allergies (if any)" 
-                  oninput="validateAlphabets(this)">
+              <input type="text" name="player_allergies[]" placeholder="Allergies (if any)" 
+                oninput="validateAlphabets(this)">
             </div>
 
             <!-- Current Medications -->
@@ -965,7 +965,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       playersContainer.appendChild(playerDiv);
       playerCount++;
       
-      // Initialize the new player's health dropdowns
       const newIllnessOption = playerDiv.querySelector('.illness-option');
       const newMedicationOption = playerDiv.querySelector('.medication-option');
       toggleIllnessField(newIllnessOption);
@@ -985,111 +984,169 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       }
     }
     
-    // Function to validate only alphabets and spaces
     function validateAlphabets(input) {
-        input.value = input.value.replace(/[^a-zA-Z\s]/g, '');
+      input.value = input.value.replace(/[^a-zA-Z\s]/g, '');
     }
 
-    // Function to validate numeric inputs with range
+    function validatePlayerName(input) {
+      let value = input.value.trim();
+      value = value.replace(/[^a-zA-Z\s]/g, ''); // Allow only alphabets and spaces
+      if (value.length < 3) {
+        input.setCustomValidity("Name must be at least 3 characters long.");
+      } else if (value.length > 15) {
+        input.setCustomValidity("Name must not exceed 15 characters.");
+      } else {
+        input.setCustomValidity(""); // Clear validation message if valid
+      }
+      input.value = value;
+    }
+
     function validateNumber(input, min, max) {
-        const value = parseInt(input.value);
-        if (isNaN(value) || value < min || value > max) {
-            alert(`Please enter a value between ${min} and ${max}`);
-            input.value = '';
-            input.focus();
-            return false;
-        }
-        return true;
+      const value = parseInt(input.value);
+      if (isNaN(value) || value < min || value > max) {
+        alert(`Please enter a value between ${min} and ${max}`);
+        input.value = '';
+        input.focus();
+        return false;
+      }
+      return true;
     }
 
-    // Function to toggle chronic illness field
     function toggleIllnessField(select) {
-        const detailsDiv = select.parentElement.querySelector('.illness-details');
-        const inputField = select.parentElement.querySelector('.illness-input');
-        
-        if (select.value === 'yes') {
-            detailsDiv.style.display = 'block';
-            inputField.setAttribute('required', 'required');
-        } else {
-            detailsDiv.style.display = 'none';
-            inputField.removeAttribute('required');
-            inputField.value = '';
-        }
+      const detailsDiv = select.parentElement.querySelector('.illness-details');
+      const inputField = select.parentElement.querySelector('.illness-input');
+      
+      if (select.value === 'yes') {
+        detailsDiv.style.display = 'block';
+        inputField.setAttribute('required', 'required');
+      } else {
+        detailsDiv.style.display = 'none';
+        inputField.removeAttribute('required');
+        inputField.value = '';
+      }
     }
 
-    // Function to toggle medication field
     function toggleMedicationField(select) {
-        const detailsDiv = select.parentElement.querySelector('.medication-details');
-        const inputField = select.parentElement.querySelector('.medication-input');
-        
-        if (select.value === 'yes') {
-            detailsDiv.style.display = 'block';
-            inputField.setAttribute('required', 'required');
-        } else {
-            detailsDiv.style.display = 'none';
-            inputField.removeAttribute('required');
-            inputField.value = '';
-        }
+      const detailsDiv = select.parentElement.querySelector('.medication-details');
+      const inputField = select.parentElement.querySelector('.medication-input');
+      
+      if (select.value === 'yes') {
+        detailsDiv.style.display = 'block';
+        inputField.setAttribute('required', 'required');
+      } else {
+        detailsDiv.style.display = 'none';
+        inputField.removeAttribute('required');
+        inputField.value = '';
+      }
     }
 
-    // Initialize all dropdowns on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize captain health dropdowns
-        const captainIllnessOption = document.querySelector('select[name="captain_chronic_illness_option"]');
-        const captainMedicationOption = document.querySelector('select[name="captain_medications_option"]');
-        
-        if (captainIllnessOption) toggleCaptainIllnessField(captainIllnessOption);
-        if (captainMedicationOption) toggleCaptainMedicationField(captainMedicationOption);
-        
-        // Initialize player health dropdowns
-        document.querySelectorAll('.illness-option').forEach(select => {
-            toggleIllnessField(select);
+    function validateJumpRange(input, min, max, fieldName) {
+      const value = parseInt(input.value);
+      if (isNaN(value) || value < min || value > max) {
+        alert(`${fieldName} must be between ${min} and ${max} cm`);
+        input.value = '';
+        input.focus();
+        return false;
+      }
+      return true;
+    }
+
+    function setupJumpValidation() {
+      const captainStandingReach = document.getElementById('captain-standing-reach');
+      const captainBlockJump = document.getElementById('captain-block-jump');
+      const captainApproachJump = document.getElementById('captain-approach-jump');
+      
+      if (captainStandingReach) {
+        captainStandingReach.addEventListener('blur', function() {
+          validateJumpRange(this, 200, 280, 'Standing Reach');
         });
-        
-        document.querySelectorAll('.medication-option').forEach(select => {
-            toggleMedicationField(select);
+      }
+      
+      if (captainBlockJump) {
+        captainBlockJump.addEventListener('blur', function() {
+          validateJumpRange(this, 250, 350, 'Block Jump');
         });
-        
-        // Add input validation for numeric fields
-        document.getElementById('captain_height').addEventListener('blur', function() {
-            validateNumber(this, 150, 220);
+      }
+      
+      if (captainApproachJump) {
+        captainApproachJump.addEventListener('blur', function() {
+          validateJumpRange(this, 270, 380, 'Approach Jump');
         });
-        
-        document.getElementById('captain-standing-reach').addEventListener('blur', function() {
-            validateNumber(this, 200, 280);
-        });
-        
-        document.getElementById('captain-block-jump').addEventListener('blur', function() {
-            validateNumber(this, 250, 350);
-        });
-        
-        document.getElementById('captain-approach-jump').addEventListener('blur', function() {
-            validateNumber(this, 270, 380);
-        });
-    });
-    
-    // Form Validation
-    document.getElementById("volleyballForm").addEventListener("submit", function(event){
-      // Check at least 5 players (changed from 6 to 5)
+      }
+      
+      document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('standing-reach-input')) {
+          validateJumpRange(e.target, 200, 280, 'Standing Reach');
+        } else if (e.target.classList.contains('block-jump-input')) {
+          validateJumpRange(e.target, 250, 350, 'Block Jump');
+        } else if (e.target.classList.contains('approach-jump-input')) {
+          validateJumpRange(e.target, 270, 380, 'Approach Jump');
+        }
+      });
+    }
+
+    document.getElementById("volleyballForm").addEventListener("submit", function(event) {
       if (playerCount < 5) {
         alert("Minimum 5 players required! You have only added " + playerCount + " players.");
         event.preventDefault();
         return;
       }
 
-      // Validate player names (no numbers)
+      const captainStandingReach = document.getElementById('captain-standing-reach');
+      const captainBlockJump = document.getElementById('captain-block-jump');
+      const captainApproachJump = document.getElementById('captain-approach-jump');
+      
+      if (captainStandingReach && !validateJumpRange(captainStandingReach, 200, 280, 'Captain Standing Reach')) {
+        event.preventDefault();
+        return;
+      }
+      
+      if (captainBlockJump && !validateJumpRange(captainBlockJump, 250, 350, 'Captain Block Jump')) {
+        event.preventDefault();
+        return;
+      }
+      
+      if (captainApproachJump && !validateJumpRange(captainApproachJump, 270, 380, 'Captain Approach Jump')) {
+        event.preventDefault();
+        return;
+      }
+
+      const standingReachInputs = document.querySelectorAll('.standing-reach-input');
+      const blockJumpInputs = document.querySelectorAll('.block-jump-input');
+      const approachJumpInputs = document.querySelectorAll('.approach-jump-input');
+      
+      for (let input of standingReachInputs) {
+        if (input.value && !validateJumpRange(input, 200, 280, 'Standing Reach')) {
+          event.preventDefault();
+          return;
+        }
+      }
+      
+      for (let input of blockJumpInputs) {
+        if (input.value && !validateJumpRange(input, 250, 350, 'Block Jump')) {
+          event.preventDefault();
+          return;
+        }
+      }
+      
+      for (let input of approachJumpInputs) {
+        if (input.value && !validateJumpRange(input, 270, 380, 'Approach Jump')) {
+          event.preventDefault();
+          return;
+        }
+      }
+
       const nameInputs = document.querySelectorAll('input[name="player_name[]"]');
       for (let nameInput of nameInputs) {
         const nameValue = nameInput.value.trim();
-        if (/\d/.test(nameValue)) {
-          alert("Player names cannot contain numbers. Please check: " + nameValue);
+        if (!/^[a-zA-Z\s]{3,15}$/.test(nameValue)) {
+          alert("Player name must contain only alphabets and spaces, with 3-15 characters.");
           nameInput.focus();
           event.preventDefault();
           return;
         }
       }
 
-      // Validate ages
       const ageInputs = document.querySelectorAll('input[name="player_age[]"]');
       for (let ageInput of ageInputs) {
         const age = parseInt(ageInput.value);
@@ -1101,7 +1158,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
       }
       
-      // Validate heights
       const heightInputs = document.querySelectorAll('input[name="player_height[]"]');
       for (let heightInput of heightInputs) {
         const height = parseInt(heightInput.value);
@@ -1112,165 +1168,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
           return;
         }
       }
-    // Enhanced validation functions
-    function validateJumpRange(input, min, max, fieldName) {
-        const value = parseInt(input.value);
-        if (isNaN(value) || value < min || value > max) {
-            alert(`${fieldName} must be between ${min} and ${max} cm`);
-            input.value = '';
-            input.focus();
-            return false;
-        }
-        return true;
-    }
-
-    // Real-time validation for jump inputs
-    function setupJumpValidation() {
-        // Captain validations
-        const captainStandingReach = document.getElementById('captain-standing-reach');
-        const captainBlockJump = document.getElementById('captain-block-jump');
-        const captainApproachJump = document.getElementById('captain-approach-jump');
-        
-        if (captainStandingReach) {
-            captainStandingReach.addEventListener('blur', function() {
-                validateJumpRange(this, 200, 280, 'Standing Reach');
-            });
-        }
-        
-        if (captainBlockJump) {
-            captainBlockJump.addEventListener('blur', function() {
-                validateJumpRange(this, 250, 350, 'Block Jump');
-            });
-        }
-        
-        if (captainApproachJump) {
-            captainApproachJump.addEventListener('blur', function() {
-                validateJumpRange(this, 270, 380, 'Approach Jump');
-            });
-        }
-        
-        // Setup validation for player jump inputs (will be added for each player)
-        document.addEventListener('input', function(e) {
-            if (e.target.classList.contains('standing-reach-input')) {
-                validateJumpRange(e.target, 200, 280, 'Standing Reach');
-            } else if (e.target.classList.contains('block-jump-input')) {
-                validateJumpRange(e.target, 250, 350, 'Block Jump');
-            } else if (e.target.classList.contains('approach-jump-input')) {
-                validateJumpRange(e.target, 270, 380, 'Approach Jump');
-            }
-        });
-    }
-
-    // Enhanced form validation
-    document.getElementById("volleyballForm").addEventListener("submit", function(event){
-        // Check at least 5 players
-        if (playerCount < 5) {
-            alert("Minimum 5 players required! You have only added " + playerCount + " players.");
-            event.preventDefault();
-            return;
-        }
-
-        // Validate captain jump ranges
-        const captainStandingReach = document.getElementById('captain-standing-reach');
-        const captainBlockJump = document.getElementById('captain-block-jump');
-        const captainApproachJump = document.getElementById('captain-approach-jump');
-        
-        if (captainStandingReach && !validateJumpRange(captainStandingReach, 200, 280, 'Captain Standing Reach')) {
-            event.preventDefault();
-            return;
-        }
-        
-        if (captainBlockJump && !validateJumpRange(captainBlockJump, 250, 350, 'Captain Block Jump')) {
-            event.preventDefault();
-            return;
-        }
-        
-        if (captainApproachJump && !validateJumpRange(captainApproachJump, 270, 380, 'Captain Approach Jump')) {
-            event.preventDefault();
-            return;
-        }
-
-        // Validate player jump ranges
-        const standingReachInputs = document.querySelectorAll('.standing-reach-input');
-        const blockJumpInputs = document.querySelectorAll('.block-jump-input');
-        const approachJumpInputs = document.querySelectorAll('.approach-jump-input');
-        
-        for (let input of standingReachInputs) {
-            if (input.value && !validateJumpRange(input, 200, 280, 'Standing Reach')) {
-                event.preventDefault();
-                return;
-            }
-        }
-        
-        for (let input of blockJumpInputs) {
-            if (input.value && !validateJumpRange(input, 250, 350, 'Block Jump')) {
-                event.preventDefault();
-                return;
-            }
-        }
-        
-        for (let input of approachJumpInputs) {
-            if (input.value && !validateJumpRange(input, 270, 380, 'Approach Jump')) {
-                event.preventDefault();
-                return;
-            }
-        }
-
-        // Validate player names (no numbers)
-        const nameInputs = document.querySelectorAll('input[name="player_name[]"]');
-        for (let nameInput of nameInputs) {
-            const nameValue = nameInput.value.trim();
-            if (/\d/.test(nameValue)) {
-                alert("Player names cannot contain numbers. Please check: " + nameValue);
-                nameInput.focus();
-                event.preventDefault();
-                return;
-            }
-        }
-
-        // Validate ages
-        const ageInputs = document.querySelectorAll('input[name="player_age[]"]');
-        for (let ageInput of ageInputs) {
-            const age = parseInt(ageInput.value);
-            if (isNaN(age) || age < 16 || age > 23) {
-                alert("Each player's age must be between 16 and 23 years.");
-                ageInput.focus();
-                event.preventDefault();
-                return;
-            }
-        }
-        
-        // Validate heights
-        const heightInputs = document.querySelectorAll('input[name="player_height[]"]');
-        for (let heightInput of heightInputs) {
-            const height = parseInt(heightInput.value);
-            if (isNaN(height) || height < 150 || height > 220) {
-                alert("Each player's height must be between 150 and 220 cm.");
-                heightInput.focus();
-                event.preventDefault();
-                return;
-            }
-        }
-        
-        alert("Team Registration Successful!");
-    });
-
-    // Initialize validation on page load
-    window.onload = function() {
-        for (let i = 0; i < 1; i++) {
-            addPlayerField();
-        }
-        setupJumpValidation();
-    };
       
       alert("Team Registration Successful!");
     });
 
-    // Add 1 player fields on page load
     window.onload = function() {
       for (let i = 0; i < 1; i++) {
         addPlayerField();
       }
+      setupJumpValidation();
+      
+      const captainIllnessOption = document.querySelector('select[name="captain_chronic_illness_option"]');
+      const captainMedicationOption = document.querySelector('select[name="captain_medications_option"]');
+      if (captainIllnessOption) toggleCaptainIllnessField(captainIllnessOption);
+      if (captainMedicationOption) toggleCaptainMedicationField(captainMedicationOption);
+      
+      document.querySelectorAll('.illness-option').forEach(select => toggleIllnessField(select));
+      document.querySelectorAll('.medication-option').forEach(select => toggleMedicationField(select));
+      
+      document.getElementById('captain_height').addEventListener('blur', function() {
+        validateNumber(this, 150, 220);
+      });
     };
   </script>
 </body>

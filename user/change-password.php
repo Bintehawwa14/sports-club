@@ -102,7 +102,14 @@ document.changepassword.confirmpassword.focus();
         <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
         <script src="js/datatables-simple-demo.js"></script>
         <style>
-
+      body {
+            margin: 0;
+            padding: 0;
+            background: url('../images/alert.jpg') no-repeat center top/cover;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 50px;
+        }
+        
     .container-fluid {
         width: 80%;
         max-width: 900px;

@@ -1,22 +1,35 @@
 <?php
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
 require 'vendor/autoload.php';
 
-$mail = new PHPMailer(true);
+function sendResetEmail($toEmail, $resetLink) {
+    $mail = new PHPMailer(true);
 
-// $mail->SMTPDebug = SMTP::DEBUG_SERVER;
-$mail->isSMTP();
-$mail->SMTPAuth = true;
+    try {
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        
+        $mail->Username = "thegamemaker@gmail.com"; // Your email
+        $mail->Password = "tiyelnjqtvscwgjb"; // Your app password
+        $mail->Host = 'smtp.gmail.com';
+        $mail->Port = 587; // TLS
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 
-$mail->Host = "smtp.gmail.com"; // Your SMTP server
-$mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-$mail->Port = 587;
-$mail->Username = "fgkwsc@gmail.com"; // Your email
-$mail->Password = "tgmfgkwsc2k25"; // Your app password
+        $mail->setFrom('thegamemaker@gmail.com', 'the game maker');
+        $mail->addAddress($toEmail);  // 👈 This is where error occurs if $toEmail is empty
 
-$mail->isHtml(true);
+        $mail->isHTML(true);
+        $mail->Subject = 'Password Reset Request';
+        $mail->Body    = "Click here to reset your password: <a href='$resetLink'>$resetLink</a>";
 
-return $mail;
+        $mail->send();
+        echo "Reset link sent successfully to $toEmail";
+    } catch (Exception $e) {
+        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+    }
+}
+?>
+

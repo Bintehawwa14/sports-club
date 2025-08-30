@@ -9,10 +9,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 }
 
 // ✅ Fetch registered cricket teams
-$sql = "SELECT team_name, captain_name, vice_captain_name
-        FROM cricket_teams 
-        ORDER BY team_name DESC";
-$result = $con->query($sql);
+// Fetch all teams per game
+$cricketTeams = mysqli_query($con, "SELECT full_name, team_name, captain_name, vice_captain_name, email, game, is_approved 
+FROM cricket_teams WHERE game='cricket'");
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -32,47 +33,61 @@ $result = $con->query($sql);
         <div id="layoutSidenav">
          <?php include_once('includes/sidebar.php');?>
             <div id="layoutSidenav_content">
-                <main>
-                    <div class="container-fluid px-4">
-                        <h1 class="mt-1">Registered Cricket Teams</h1>
-                       
-            
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <i class="fas fa-table me-1"></i>
-                                Registered Cricket Teams Details
-                            </div>
-                            <div class="card-body">
-                                <table id="datatablesSimple">
-
-    <?php if ($result->num_rows > 0): ?>
-        <div class="table-responsive mt-1">
-            <table class="table table-bordered table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Team Name</th>
-                        <th>Captain Name</th>
-                        <th>Vice Captain Name</th>
-                       
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while($row = $result->fetch_assoc()): ?>
-                        <tr>
-                           
-                            <td><?= htmlspecialchars($row['team_name']) ?></td>
-                            <td><?= htmlspecialchars($row['captain_name']) ?></td>
-                             <td><?= htmlspecialchars($row['vice_captain_name']) ?></td>
-                            
-                        </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        </div>
+              <!-- Cricket Teams -->
+<h3>Cricket Teams</h3>
+<?php if (mysqli_num_rows($cricketTeams) > 0): ?>
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Full Name</th>
+            <th>Team Name</th>
+            <th>Captain</th>
+            <th>Vice Captain</th>
+            <th>Email</th>
+            <th>Game</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php while($row = mysqli_fetch_assoc($cricketTeams)) { ?>
+            <tr>
+                <td><?= htmlspecialchars($row['full_name']); ?></td>
+                <td><?= htmlspecialchars($row['team_name']); ?></td>
+                <td><?= htmlspecialchars($row['captain_name']); ?></td>
+                <td><?= htmlspecialchars($row['vice_captain_name']); ?></td>
+                <td><?= htmlspecialchars($row['email']); ?></td>
+                <td><?= htmlspecialchars($row['game']); ?></td>
+               
+                <td>
+                    <!-- Approve dropdown -->
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="cricket">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['team_name']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
+                
+                <td>         
+                    <a href="cteams_detail.php?team_name=<?php echo urlencode($row['team_name']); ?>" class="btn btn-primary btn-sm">Details</a>
+                    <a href="delete.php?game=cricket&team_name=<?= urlencode($row['team_name']); ?>"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete this team?');">
+                       🗑
+                    </a>
+                </td>
+            </tr>
+        <?php } ?>
+    </tbody>
+</table>
            <a class="btn btn-sm btn-primary edit-link" href="cricket_scheduling.php">Schedule match</a>
-    <?php else: ?>
-        <div class="alert alert-warning mt-3">No cricket teams registered yet.</div>
-    <?php endif; ?>
+<?php else: ?>
+    <div class="alert alert-warning mt-3">No cricket teams registered yet.</div>
+<?php endif; ?>
 </div>
 <style>
         body {

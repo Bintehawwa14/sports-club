@@ -1,75 +1,10 @@
 <?php
+session_start();
+
+require 'include/db_connect.php'; 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-?>
-<?php
-session_start(); // must be top
-require 'include/db_connect.php';
-
-// Forgot Password Handling
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['forgot_password'])) {
-    $email = isset($_POST['forgot_email']) ? mysqli_real_escape_string($con, trim($_POST['forgot_email'])) : '';
-    
-    if (!empty($email)) {
-        // Check if email exists
-        $query = "SELECT id FROM users WHERE email = ?";
-        $stmt = $con->prepare($query);
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result && $result->num_rows > 0) {
-            // Generate a unique token
-            $token = bin2hex(random_bytes(16));
-            $token_hash = hash("sha256", $token);
-            $expiry = date("Y-m-d H:i:s", time() + 60 * 30); // 30 minutes from now
-            
-            // Update user record with token and expiry
-            $update_query = "UPDATE users SET reset_token = ?, reset_token_expire = ? WHERE email = ?";
-            $update_stmt = $con->prepare($update_query);
-            $update_stmt->bind_param("sss", $token_hash, $expiry, $email);
-            // After the token is generated and stored
-require 'vendor/autoload.php';
-$mail = require 'mailer.php';
-
-$mail->setFrom("noreply@example.com", "The Game Maker");
-$mail->addAddress($email);
-$mail->Subject = "Password Reset";
-$mail->Body = <<<END
-Click <a href="$reset_link">here</a> to reset your password.
-<br><br>
-This link will expire in 30 minutes.
-END;
-
-try {
-    $mail->send();
-    $forgot_success = "Password reset link has been sent to your email.";
-} catch (Exception $e) {
-    $forgot_error = "Message could not be sent. Mailer error: {$mail->ErrorInfo}";
-}
-            
-            if ($update_stmt->execute()) {
-                // Send email with reset link
-                $reset_link = "http://" . $_SERVER['HTTP_HOST'] . "/reset_password.php?token=" . $token;
-                
-                // For demonstration, we'll show the link in an alert
-                // In production, you would send an actual email
-                $forgot_success = "Password reset link has been generated. Check your email.";
-                
-                // In a real application, you would use a function like mail() or a library to send email
-                // mail($email, "Password Reset Request", "Click here to reset your password: " . $reset_link);
-            } else {
-                $forgot_error = "Error generating reset token. Please try again.";
-            }
-        } else {
-            // Don't reveal if email exists or not for security
-            $forgot_success = "If this email exists in our system, a reset link will be sent.";
-        }
-    } else {
-        $forgot_error = "Please enter your email address.";
-    }
-}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) { 
     $email = isset($_POST['email']) ? mysqli_real_escape_string($con, trim($_POST['email'])) : '';

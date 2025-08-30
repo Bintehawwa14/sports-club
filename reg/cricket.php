@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 require '../include/db_connect.php';
@@ -15,12 +16,29 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
         });
     </script>";
 }
+
+// Fetch event_name from events table using event_id
+$event_id = mysqli_real_escape_string($con, $_GET['event_id'] ?? 0);
+$event_name = "";
+if ($event_id) {
+    $eventQuery = mysqli_query($con, "SELECT event_name FROM events WHERE id='$event_id'");
+    if ($eventRow = mysqli_fetch_assoc($eventQuery)) {
+        $event_name = $eventRow['event_name'];
+    } else {
+        echo "<script>alert('Invalid event ID. Please select a valid event.'); window.location.href='../user/get_event.php';</script>";
+        exit();
+    }
+} else {
+    echo "<script>alert('No event ID provided. Please select an event.'); window.location.href='../user/get_event.php';</script>";
+    exit();
+}
+
 $userid = $_SESSION['userid'];
 $email = $_SESSION['email'];
-$check = "SELECT * FROM cricket_teams WHERE email = '$email'";
+
+// Check if user already registered for cricket
+$check = "SELECT * FROM cricket_teams WHERE email = '$email' AND event_name = '$event_name'";
 $exist = mysqli_query($con, $check);
-
-
 
 if ($exist && mysqli_num_rows($exist) > 0) {
     $row = mysqli_fetch_assoc($exist);
@@ -28,23 +46,13 @@ if ($exist && mysqli_num_rows($exist) > 0) {
     if ($approved == "approved") {
         header("Location: ../user/dashboard.php");
         exit();
-    }else if ($approved=="pending"){
-       echo "<script>
+    } else if ($approved == "pending") {
+        echo "<script>
             alert('Your request for cricket is not approved yet!');
-            window.location.href='../user/join.php';
-          </script>";
-    exit();
+            window.location.href='../user/join.php?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
+        exit();
     }
 }
-
-// if (mysqli_num_rows($exist) > 0) {
-//     echo "<script>
-//             alert('Already registered for Cricket');
-//             window.location.href='../user/join.php';
-//           </script>";
-//     exit();
-// }
-
 
 // Fetch user data if logged in
 $userFullName = "";
@@ -52,16 +60,16 @@ $userEmail = "";
 $isLoggedIn = false;
 
 if (isset($_SESSION['userid'])) {
-    $userId = $_SESSION['userid'];  // match the session key
- $userQuery = "SELECT fname, lname, email FROM users WHERE id = '$userId'";
-$userResult = mysqli_query($con, $userQuery);
+    $userId = $_SESSION['userid'];
+    $userQuery = "SELECT fname, lname, email FROM users WHERE id = '$userId'";
+    $userResult = mysqli_query($con, $userQuery);
 
-if ($userResult && mysqli_num_rows($userResult) > 0) {
-    $userData = mysqli_fetch_assoc($userResult);
-    $userFullName = $userData['fname'] . ' ' . $userData['lname'];  // combine first and last name
-    $userEmail = $userData['email'];
-    $isLoggedIn = true;
-}
+    if ($userResult && mysqli_num_rows($userResult) > 0) {
+        $userData = mysqli_fetch_assoc($userResult);
+        $userFullName = $userData['fname'] . ' ' . $userData['lname'];
+        $userEmail = $userData['email'];
+        $isLoggedIn = true;
+    }
 }
 
 // Redirect if not logged in
@@ -71,66 +79,54 @@ if (!$isLoggedIn) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Team Information
+    $fullName = mysqli_real_escape_string($con, $_POST['fullName']);
+    $email = mysqli_real_escape_string($con, $_POST['email']);
+    $teamName = mysqli_real_escape_string($con, $_POST['team_name']);
+    $captainName = mysqli_real_escape_string($con, $_POST['captain_name']);
+    $viceCaptainName = mysqli_real_escape_string($con, $_POST['vice_captain_name']);
 
-    // Team Information - Updated to match HTML form fields
-    $fullName = $_POST['fullName'];
-    $email = $_POST['email'];
-    $teamName = $_POST['team_name'];
- $captainName = $_POST['captain_name'];
-$viceCaptainName = $_POST['vice_captain_name'];
+    // Check if team name already exists for this event
+    $teamCheck = mysqli_query($con, "SELECT * FROM cricket_teams WHERE team_name = '$teamName' AND event_name = '$event_name'");
+    if (mysqli_num_rows($teamCheck) > 0) {
+        echo "<script>alert('⚠️ Team name already exists for this event! Please choose a different name.'); window.location.href='" . $_SERVER['PHP_SELF'] . "?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
+        exit();
+    }
 
-// Insert into cricket_teams
-$stmt = $con->prepare("INSERT INTO cricket_teams (full_name, email, team_name,
-                                                 captain_name, vice_captain_name) 
-                       VALUES (?, ?, ?, ?, ?)");
-                       
-$stmt->bind_param("sssss", $fullName, $email, $teamName, $captainName, $viceCaptainName);
-$stmt->execute();
-    // Player Information - Updated to match HTML form fields
+    // Insert into cricket_teams
+    $stmt = $con->prepare("INSERT INTO cricket_teams (event_name, full_name, email, team_name, captain_name, vice_captain_name) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssss", $event_name, $fullName, $email, $teamName, $captainName, $viceCaptainName);
+    $stmt->execute();
+
+    // Player Information
     if (isset($_POST['player-name'])) {
         $playerNames = $_POST['player-name'];
         $ages = $_POST['player-age'];
         $roles = $_POST['player-role'];
         $battingStyles = $_POST['player-batting-style'];
-         $teamName = $_POST['team_name'];
         $bowlingStyles = $_POST['player-bowling-style'];
         $heights = $_POST['player-height'];
         $weights = $_POST['player-weight'];
         $disabilities = $_POST['player-disability'];
 
-       for ($i = 0; $i < count($playerNames); $i++) {
-    $stmt2 = $con->prepare("INSERT INTO cricket_players 
-        (player_name, age, team_name, role, batting_style, bowling_style, height, weight, disability) 
-        VALUES (?,?,?,?,?,?,?,?,?)");
-
-    $stmt2->bind_param(
-        "sisssiiis",   // 9 placeholders → string,int,string,string,string,int,int,int,string
-        $playerNames[$i], 
-        $ages[$i],  
-        $teamName,      // team name is SAME for all players
-        $roles[$i], 
-        $battingStyles[$i], 
-        $bowlingStyles[$i], 
-        $heights[$i], 
-        $weights[$i], 
-        $disabilities[$i]
-    );
-
+        for ($i = 0; $i < count($playerNames); $i++) {
+            $stmt2 = $con->prepare("INSERT INTO cricket_players (event_name, player_name, age, team_name, role, batting_style, bowling_style, height, weight, disability) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt2->bind_param("sissssiiis", $event_name, $playerNames[$i], $ages[$i], $teamName, $roles[$i], $battingStyles[$i], $bowlingStyles[$i], $heights[$i], $weights[$i], $disabilities[$i]);
             $stmt2->execute();
         }
     }
 
     // Redirect to success page
-    header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
+    header("Location: " . $_SERVER['PHP_SELF'] . "?success=1&event_id=$event_id&event_name=".urlencode($event_name));
     exit();
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Cricket Registration Form</title>
+<title>Cricket Team Registration</title>
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -325,14 +321,16 @@ $stmt->execute();
 <div class="container">
     <h2>Cricket Team Registration</h2>
     <form method="POST" id="cricketForm">
-        
+        <input type="hidden" name="event_id" value="<?php echo $event_id; ?>">
+        <input type="hidden" name="event_name" value="<?php echo htmlspecialchars($event_name); ?>">
+
         <!-- Team Information -->
         <div class="form-section">
             <h3>Team Information</h3>
             <div class="grid-2">
                 <div>
                     <label for="fullName" class="required">Full Name:</label>
-                    <input type="text" id="fullName" name="fullName"  value="<?php echo htmlspecialchars($userFullName); ?>" required readonly>
+                    <input type="text" id="fullName" name="fullName" value="<?php echo htmlspecialchars($userFullName); ?>" required readonly>
                 </div>
                 <div>
                     <label for="email" class="required">Email Address:</label>
@@ -340,17 +338,15 @@ $stmt->execute();
                 </div>
                 <div>
                     <label for="team_name" class="required">Team Name:</label>
-                    <input type="text" id="team_name" name="team_name" required>
-                  
-
+                    <input type="text" id="team_name" name="team_name" required oninput="validateTeamName(this)">
                 </div>
                 <div>
                     <label for="captain_name" class="required">Captain Name:</label>
                     <input type="text" id="captain_name" name="captain_name" required>
                 </div>
                 <div>
-                   <label for="viceCaptain" class="required">Vice-Captain Name:</label>
-                   <input type="text" id="viceCaptain" name="vice_captain_name" required>
+                    <label for="vice_captain_name" class="required">Vice-Captain Name:</label>
+                    <input type="text" id="vice_captain_name" name="vice_captain_name" required>
                 </div>
             </div>
         </div>
@@ -376,10 +372,13 @@ $stmt->execute();
         <button type="submit" class="submit-btn">Submit Registration</button>
     </form>
     
-    <a href="../user/join.php" class="back-btn">⬅ Back to Dashboard</a>
+    <a href="../user/join.php?event_id=<?php echo $event_id; ?>&event_name=<?php echo urlencode($event_name); ?>" class="back-btn">⬅ Back</a>
 </div>
 
 <script>
+    // Example list of existing team names (replace with actual data from database if needed)
+    const existingTeamNames = ["Team A", "Team B", "Team C"]; // This should be dynamically populated from PHP
+
     let playerCount = 0;
 
     function addPlayerField() {
@@ -395,7 +394,7 @@ $stmt->execute();
             <h4>Player ${playerCount + 1}</h4>
             <div class="player-grid">
                 <div>
-                    <input type="text" name="player-name[]" placeholder="Player Name*" required>
+                    <input type="text" name="player-name[]" placeholder="Player Name*" required oninput="validatePlayerName(this)">
                 </div>
                 <div>
                     <input type="number" name="player-age[]" placeholder="Age*" min="16" max="22" required>
@@ -442,7 +441,7 @@ $stmt->execute();
 
     function removePlayerField() {
         if (playerCount <= 11) {
-            alert("At least 11 player is required.");
+            alert("At least 11 players are required.");
             return;
         }
         
@@ -453,28 +452,47 @@ $stmt->execute();
         }
     }
 
+    function validatePlayerName(input) {
+        let value = input.value.trim();
+        value = value.replace(/[^a-zA-Z\s]/g, ''); // Allow only alphabets and spaces
+        if (value.length < 3) {
+            input.setCustomValidity("Name must be at least 3 characters long.");
+        } else if (value.length > 15) {
+            input.setCustomValidity("Name must not exceed 15 characters.");
+        } else {
+            input.setCustomValidity(""); // Clear validation message if valid
+        }
+        input.value = value;
+    }
+
+    function validateTeamName(input) {
+        const teamName = input.value.trim();
+        if (teamName && existingTeamNames.includes(teamName)) {
+            alert("⚠️ Team name '" + teamName + "' already exists! Please choose a different name.");
+            input.value = ''; // Clear the input
+            input.focus();
+        }
+    }
+
     // Form Validation
-    document.getElementById("cricketForm").addEventListener("submit", function(event){
-        // Check at least 6 players
+    document.getElementById("cricketForm").addEventListener("submit", function(event) {
         if (playerCount < 11) {
             alert("Minimum 11 players required! You have only added " + playerCount + " players.");
             event.preventDefault();
             return;
         }
 
-        // Validate player names (no numbers)
         const nameInputs = document.querySelectorAll('input[name="player-name[]"]');
         for (let nameInput of nameInputs) {
             const nameValue = nameInput.value.trim();
-            if (/\d/.test(nameValue)) {
-                alert("Player names cannot contain numbers. Please check: " + nameValue);
+            if (!/^[a-zA-Z\s]{3,15}$/.test(nameValue)) {
+                alert("Player name must contain only alphabets and spaces, with 3-15 characters.");
                 nameInput.focus();
                 event.preventDefault();
                 return;
             }
         }
 
-        // Validate ages
         const ageInputs = document.querySelectorAll('input[name="player-age[]"]');
         for (let ageInput of ageInputs) {
             const age = parseInt(ageInput.value);
@@ -485,7 +503,14 @@ $stmt->execute();
                 return;
             }
         }
-        
+
+        const teamName = document.getElementById("team_name").value.trim();
+        if (existingTeamNames.includes(teamName)) {
+            alert("⚠️ Team name '" + teamName + "' already exists! Please choose a different name.");
+            event.preventDefault();
+            return;
+        }
+
         alert("Team Registration Successful! 🎉");
     });
 

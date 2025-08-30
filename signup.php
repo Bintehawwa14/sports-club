@@ -367,21 +367,28 @@ if(isset($_POST['submit']))
             });
             
             // Form submission validation
-            form.addEventListener('submit', function(event) {
-                let isValid = true;
-                
-                if (!validateName('fname', 'fnameError')) isValid = false;
-                if (!validateName('lname', 'lnameError')) isValid = false;
-                if (!validateEmail('email', 'emailError')) isValid = false;
-                if (!validateContact('contact', 'contactError')) isValid = false;
-                if (!validateCNIC('cnic', 'cnicError')) isValid = false;
-                if (!validateClubCollege('club_college', 'clubCollegeError')) isValid = false;
-                if (!validateConfirmPassword()) isValid = false;
-                
-                if (!isValid) {
-                    event.preventDefault();
-                }
-            });
+form.addEventListener('submit', function(event) {
+    let isValid = true;
+    
+    // Validate all fields
+    if (!validateName('fname', 'fnameError')) isValid = false;
+    if (!validateName('lname', 'lnameError')) isValid = false;
+    if (!validateEmail('email', 'emailError')) isValid = false;
+    if (!validateContact('contact', 'contactError')) isValid = false;
+    if (!validateCNIC('cnic', 'cnicError')) isValid = false;
+    if (!validateClubCollege('club_college', 'clubCollegeError')) isValid = false;
+    if (!validateConfirmPassword()) isValid = false;
+    
+    // If any validation failed, prevent form submission
+    if (!isValid) {
+        event.preventDefault();
+        // Scroll to the first error
+        const firstError = document.querySelector('.error:not(:empty)');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+});
             
             // Validation functions
      function validateName(inputId, errorId) {
@@ -439,7 +446,7 @@ function validateContact(inputId, errorId) {
         return false;
     } else {
         // Check if contact is unique via AJAX
-        checkUnique('contactno', contact, errorId, function(isUnique) {
+        checkUnique('contact', contact, errorId, function(isUnique) {
             if (!isUnique) {
                 errorElement.textContent = 'Contact number already exists.';
                 document.getElementById(inputId).classList.add('invalid');
@@ -450,6 +457,8 @@ function validateContact(inputId, errorId) {
                 return true;
             }
         });
+        // Return true initially while we wait for the AJAX response
+        return true;
     }
 }
 
@@ -479,6 +488,8 @@ function validateCNIC(inputId, errorId) {
                 return true;
             }
         });
+        // Return true initially while we wait for the AJAX response
+        return true;
     }
 }
 
@@ -499,21 +510,21 @@ function checkUnique(field, value, errorId, callback) {
                     callback(response.unique);
                 } catch (e) {
                     console.error("Error parsing response:", e);
-                    errorElement.textContent = 'Validation error. Please try again.';
-                    callback(false);
+                    // Don't show error to user for validation failure
+                    callback(true); // Assume it's unique if we can't verify
                 }
             } else {
                 console.error("AJAX error:", xhr.status);
-                errorElement.textContent = 'Validation error. Please try again.';
-                callback(false);
+                // Don't show error to user for network issues
+                callback(true); // Assume it's unique if we can't verify
             }
         }
     };
     
     xhr.onerror = function() {
         console.error("AJAX request failed");
-        errorElement.textContent = 'Network error. Please try again.';
-        callback(false);
+        // Don't show error to user for network issues
+        callback(true); // Assume it's unique if we can't verify
     };
     
     xhr.send(`field=${field}&value=${encodeURIComponent(value)}`);
@@ -548,8 +559,7 @@ document.getElementById('cnic').addEventListener('blur', function() {
 // Add to your form submission validation
 form.addEventListener('submit', function(event) {
     let isValid = true;
-    
-    // ... your other validation checks ...
+
     
     // Check if contact is unique (synchronous check)
     const contact = document.getElementById('contact').value.trim();

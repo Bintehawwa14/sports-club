@@ -1,43 +1,62 @@
 <?php
 include_once('../../include/db_connect.php');
 
-if (isset($_POST['is_approved']) && isset($_POST['team_name']) && isset($_POST['game'])) {
-    $team_name = mysqli_real_escape_string($con, $_POST['team_name']);
-    $status = mysqli_real_escape_string($con, $_POST['is_approved']);
-    $game = mysqli_real_escape_string($con, $_POST['game']); // volleyball
+header('Content-Type: application/json');
 
-     $team_table = $game . "_teams";
-    $player_table = $game . "_players";
+if (isset($_POST['is_approved'], $_POST['team_name'], $_POST['game'])) {
+    $team_name = $_POST['team_name'];
+    $status = $_POST['is_approved'];
+    $game = $_POST['game'];
+    $response = ['success' => false, 'error' => '', 'team_status' => ''];
+
+    if ($game !== 'volleyball') {
+        $response['error'] = 'Invalid game type';
+        echo json_encode($response);
+        exit();
+    }
+
+    $team_table = "volleyball_teams";
+    $player_table = "volleyball_players";
 
     // Individual player approval
     if (isset($_POST['player_name'])) {
-        $player_name = mysqli_real_escape_string($con, $_POST['player_name']);
-        mysqli_query($con, "UPDATE $player_table SET is_approved='$status' 
-                            WHERE player_name='$player_name' AND team_name='$team_name'");
-        
-         $checkPlayers = "SELECT COUNT(*) as pending_count 
-                         FROM $player_table 
-                         WHERE team_name='$team_name' AND is_approved='pending'";
-        $res = mysqli_query($con, $checkPlayers);
-        $row = mysqli_fetch_assoc($res);
+        $player_name = $_POST['player_name'];
 
-     if ($row['pending_count'] > 0) {
-            mysqli_query($con, "UPDATE $team_table SET is_approved='pending' WHERE team_name='$team_name'");
+        $stmt = $con->prepare("UPDATE $player_table SET is_approved = ? WHERE player_name = ? AND team_name = ?");
+        $stmt->bind_param("sss", $status, $player_name, $team_name);
+        $success = $stmt->execute();
+
+        if ($success) {
+            // Check if any players are still pending
+            $stmt_check = $con->prepare("SELECT COUNT(*) AS pending_count FROM $player_table WHERE team_name = ? AND is_approved = 'pending'");
+            $stmt_check->bind_param("s", $team_name);
+            $stmt_check->execute();
+            $check_result = $stmt_check->get_result();
+            $row = $check_result->fetch_assoc();
+
+            // Update team status
+            $team_status = ($row['pending_count'] > 0) ? 'pending' : 'approved';
+            $stmt_team = $con->prepare("UPDATE $team_table SET is_approved = ? WHERE team_name = ?");
+            $stmt_team->bind_param("ss", $team_status, $team_name);
+            $team_success = $stmt_team->execute();
+
+            if ($team_success) {
+                $response['success'] = true;
+                $response['team_status'] = $team_status;
+            } else {
+                $response['error'] = 'Failed to update team status';
+            }
         } else {
-            mysqli_query($con, "UPDATE $team_table SET is_approved='approved' WHERE team_name='$team_name'");
+            $response['error'] = 'Failed to update player status';
         }
-    }
-    // Optional: If you want a full team approval button, use this block
-    elseif (isset($_POST['approve_team'])) {
-        mysqli_query($con, "UPDATE $player_table SET is_approved='$status' WHERE team_name='$team_name'");
+    } else {
+        $response['error'] = 'Player name not provided';
     }
 
-       header("Location: all_teams.php");
-    // Redirect back
-    if (isset($_POST['redirect_back'])) {
-        header("Location: " . $_POST['redirect_back']);
-        exit();
-    } 
-} 
-    
+    echo json_encode($response);
+    exit();
+} else {
+    echo json_encode(['success' => false, 'error' => 'Invalid request']);
+    exit();
+}
 ?>

@@ -1,78 +1,130 @@
-<?php 
+<?php
 session_start();
-include_once('../include/db_connect.php');
 
-if (!isset($_SESSION['userid']) || strtolower($_SESSION['role']) !== 'newadmin') {
-    header("Location: index.php");
+// Check if user is newadmin
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'newadmin') {
+    header('Location: ../index.php');
     exit();
 }
 
-$adminid = $_SESSION['userid'];
+include_once('../include/db_connect.php');
 
-$query = mysqli_query($con, "SELECT * FROM users WHERE id='$adminid' AND LOWER(role)='newadmin'");
+// Get newadmin userid from session
+$newadminId = $_SESSION['userid'];
+
+// Query newadmin details from users table
+$query = mysqli_query($con, "SELECT * FROM users WHERE id = '$newadminId'");
+
 if (!$query) {
-    die("Query failed: " . mysqli_error($con));
+    die("Database query failed: " . mysqli_error($con));
 }
 
-if ($result = mysqli_fetch_array($query)) {
-    // rest of profile HTML here
-} else {
-    echo "<div class='alert alert-danger text-center mt-5'>User not found!</div>";
+$newadmin = mysqli_fetch_assoc($query);
+
+if (!$newadmin) {
+    echo "Newadmin details not found!";
+    exit();
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <title>Admin Profile</title>
-    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
-    <link href="css/styles.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js" crossorigin="anonymous"></script>
-</head>
-<body class="sb-nav-fixed">
-    <?php include_once('includes/navbar.php'); ?>
-    <?php include_once('includes/sidebar.php');?>
-        <div id="layoutSidenav_content">
-    
-        <div class="profile-container">
-     <div class="profile-header mb-4 d-flex justify-content-between align-items-center">
-     <h1><?php echo htmlspecialchars($result['fname']); ?>'s Profile</h1>
-     <a class="btn btn-sm btn-primary edit-link" href="edit-profile.php">Edit Profile</a>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Newadmin Profile</title>
+        <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
+        <link href="../css/styles.css" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js" crossorigin="anonymous"></script>
+    </head>
+    <body class="sb-nav-fixed">
+        <?php include_once('includes/navbar.php'); ?>
+        <div id="layoutSidenav">
+            <?php include_once('includes/sidebar.php'); ?>
+            <div id="layoutSidenav_content">
+                <main>
+                    <div class="container-fluid px-4">
+                        <?php 
+                        $newadminid = $_SESSION['userid']; 
+                        $query = mysqli_query($con, "SELECT * FROM users WHERE id='$newadminid'");
+                        if (!$query) {
+                            die("Query failed: " . mysqli_error($con));
+                        }
+
+                        if ($result = mysqli_fetch_array($query)) {
+                        ?>
+                        <div class="profile-container">
+                            <div class="profile-header mb-4 d-flex justify-content-between align-items-center">
+                                <h1><?php echo htmlspecialchars($result['fname']); ?>'s Profile</h1>
+                                <a class="btn btn-sm btn-primary edit-link" href="edit-profile.php">Edit Profile</a>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle">
+                                    <tr>
+                                        <th>First Name</th>
+                                        <td><?php echo htmlspecialchars($result['fname']); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Last Name</th>
+                                        <td><?php echo htmlspecialchars($result['lname']); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email</th>
+                                        <td><?php echo htmlspecialchars($result['email']); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Contact No.</th>
+                                        <td><?php echo htmlspecialchars($result['contactno']); ?></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Reg. Date</th>
+                                        <td><?php echo htmlspecialchars($result['posting_date']); ?></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <?php
+                        } else {
+                            echo "<div class='alert alert-danger text-center mt-5'>User not found!</div>";
+                        }
+                        ?>
+                    </div>
+                </main>
+            </div>
         </div>
-
-<table border="1" cellpadding="10">
-    <tr><th>First Name</th><td><?php echo htmlspecialchars($result['fname']); ?></td></tr>
-    <tr><th>Last Name</th><td><?php echo htmlspecialchars($result['lname']); ?></td></tr>
-    <tr><th>Email</th><td><?php echo htmlspecialchars($result['email']); ?></td></tr>
-    <tr><th>Contact No.</th><td><?php echo htmlspecialchars($result['contactno']); ?></td></tr>
-    <tr><th>Registered On</th><td><?php echo htmlspecialchars($result['posting_date']); ?></td></tr>
-    <tr><th>Role</th><td><?php echo ucfirst(htmlspecialchars($result['role'])); ?></td></tr>
-</table>
-
-</body>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <script src="../js/scripts.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
+        <script src="../assets/demo/chart-area-demo.js"></script>
+        <script src="../assets/demo/chart-bar-demo.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
+        <script src="../js/datatables-simple-demo.js"></script>
+    </body>
 </html>
 <style>
     body {
-          margin: 0;
+        margin: 0;
         padding: 0;
-        background-image: url('../images/cricketpage.jpg');
+        background-image: url('../images/volleyballform.jpg');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         font-family: Arial, sans-serif;
-                
     }
     body::before {
-  content: "";
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.5);  /* black overlay */
-  z-index: -1;
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: -1;
     }
-     .profile-container {
+    .profile-container {
         width: 80%;
         max-width: 900px;
         margin: 50px auto;
@@ -81,19 +133,16 @@ if ($result = mysqli_fetch_array($query)) {
         border-radius: 8px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
-
     .profile-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
     }
-
     .profile-header h1 {
         font-size: 24px;
         color: #333;
     }
-
     .edit-link {
         font-size: 14px;
         color: #fff;
@@ -102,7 +151,46 @@ if ($result = mysqli_fetch_array($query)) {
         text-decoration: none;
         border-radius: 5px;
     }
-
     .edit-link:hover {
         background-color: #0056b3;
-    }</style>
+    }
+    .table-responsive {
+        margin-top: 20px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    th, td {
+        padding: 12px;
+        text-align: left;
+        font-size: 16px;
+        border: 1px solid #ddd;
+    }
+    th {
+        background-color: #f7f7f7;
+        font-weight: bold;
+        color: #333;
+    }
+    td {
+        background-color: #fff;
+        color: #555;
+    }
+    @media (max-width: 768px) {
+        .profile-container {
+            width: 95%;
+            padding: 15px;
+        }
+        .profile-header h1 {
+            font-size: 20px;
+        }
+        .table-responsive {
+            margin-top: 10px;
+        }
+        table th, table td {
+            font-size: 14px;
+            padding: 8px;
+        }
+    }
+</style>

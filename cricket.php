@@ -108,7 +108,7 @@
         </div>
     </div>
 
-    <a href="Sports.php" class="back-button">← Back to Home</a>
+    <a href="index.php" class="back-button">← Back to Home</a>
 
 </body>
 </html>

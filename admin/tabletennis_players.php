@@ -2,15 +2,12 @@
 include_once('../include/db_connect.php');
 
 // for deleting user
-if(isset($_GET['id']))
-{
-$adminid=$_GET['id'];
-$msg=mysqli_query($con,"delete from users where id='$adminid'");
-if($msg)
-{
-echo "<script>alert('Data deleted');</script>";
-}
-}
+$tabletennisTeams = mysqli_query($con, "SELECT fullName,email,role,teamName,hand1,play_style1,player1,
+dob1,height1,weight1,chronic_illness1,allergies1,medications1,surgeries1,previous_injuries1,player2,
+dob2,height2,weight2,chronic_illness2,allergies2,medications2,surgeries2,previous_injuries2,hand2,
+play_style2,created_at, game,is_approved 
+FROM tabletennis_players");
+
    ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,46 +28,99 @@ echo "<script>alert('Data deleted');</script>";
         <div id="layoutSidenav">
          <?php include_once('includes/sidebar.php');?>
             <div id="layoutSidenav_content">
-                <main>
-                    <div class="container-fluid px-4">
-                        <h1 class="mt-4">Registered Table Tennis Players</h1>
-                       
+               <!-- Table Tennis Teams -->
+<h3>Table Tennis Teams</h3>
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Full Name</th>
+            <th>Team Name</th>
+            <th>Email</th>
+            <th>Player 1</th>
+            <th>Player 2</th>
+            <th>Game</th>
+            <th>Role</th>
+            <th>Status</th>
             
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <i class="fas fa-table me-1"></i>
-                                Registered Table Tennis Players Details
-                            </div>
-                            <div class="card-body">
-                                <table id="datatablesSimple">
-                                    <thead>
-                                        
-                                  <tr>
-                                  <th>id</th>
-                                  <th>Full Name</th>
-                                  <th> Email</th>
-                                  <th> Game</th>
-                                  <th> Role</th>
-                                  </tr>
-                                    </tfoot>
-                                    <tbody>
-                                <?php $ret=mysqli_query($con,"select * from tabletennis_players");
-                                $cnt=1;
-                                while($row=mysqli_fetch_array($ret))
-                              {?>
-                              <tr>
-                              <td><?php echo $cnt;?></td>
-                                  
-                                  <td><?php echo $row['fullName'];?></td>
-                                  <td><?php echo $row['email'];?></td>
-                                  <td><?php echo $row['game'];?></td>
-                                  <td><?php echo $row['role'];?></td>  
-                                
-                                  
-                              </tr>
-                              <?php $cnt=$cnt+1; }?>
-                                  
-                                </table>
+        </tr>
+    </thead>
+    <tbody>
+       <?php 
+        mysqli_data_seek($tabletennisTeams, 0);
+        while($row = mysqli_fetch_assoc($tabletennisTeams)) 
+            if(strtolower($row['role']) == 'double') { 
+                $status = isset($row['is_approved']) ? $row['is_approved'] : 'pending';
+        ?>
+            <tr>
+                <td><?= htmlspecialchars($row['fullName']); ?></td>
+                <td><?= htmlspecialchars($row['teamName']); ?></td>
+                <td><?= htmlspecialchars($row['email']); ?></td>
+                <td><?= htmlspecialchars($row['player1']); ?></td>
+                <td><?= htmlspecialchars($row['player2']); ?></td>
+                <td><?= htmlspecialchars($row['game']); ?></td>
+                <td><?= htmlspecialchars($row['role']); ?></td>
+                <td>
+                    <!-- Approve dropdown -->
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="tabletennis">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
+                
+            </tr>
+        <?php } ?>
+    </tbody>
+</table>
+
+<!-- Table Tennis Players -->
+<h3>Table Tennis players</h3>
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Player</th>
+            <th>Game</th>
+            <th>Role</th>
+            <th>Status</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        <?php 
+        mysqli_data_seek($tabletennisTeams, 0);
+        while($row = mysqli_fetch_assoc($tabletennisTeams)) 
+            if(strtolower($row['role']) == 'single') { 
+                $status = isset($row['is_approved']) ? $row['is_approved'] : 'pending';
+        ?>
+            <tr>
+                <td><?= htmlspecialchars($row['fullName']); ?></td>
+                <td><?= htmlspecialchars($row['email']); ?></td>
+                <td><?= htmlspecialchars($row['player1']); ?></td>
+                <td><?= htmlspecialchars($row['game']); ?></td>
+                <td><?= htmlspecialchars($row['role']); ?></td>
+                <td>
+                    <!-- Approve dropdown -->
+                    <form method="post" action="update_statust.php">
+                        <input type="hidden" name="game" value="tabletennis">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                
+               </td>
+            </tr>
+        <?php } ?>
+    </tbody>
+</table>
                                 <a class="btn btn-sm btn-primary edit-link" href="tabletennis_scheduling.php">Single Elimination</a>
                                   <a class="btn btn-sm btn-primary edit-link" href="tabletennis_double.php">Double Elimination</a>
                             </div>

@@ -90,7 +90,7 @@
     <p><strong>Type of Game:</strong> Indoor Individual or Doubles Sport</p>
     <p><strong>Equipment Needed:</strong> Table Tennis Table, Paddles, Table Tennis Balls, Sports Attire</p>
     <p><strong>Description:</strong> Table Tennis is a fast-paced indoor game that can be played as singles or doubles. Players use paddles to hit a lightweight ball across a table divided by a net. The sport enhances hand-eye coordination, quick reflexes, and strategic thinking.</p>   
-        <div><a href="Sports.php" class="back-button">← Back to Home</a></div>
+        <div><a href="index.php" class="back-button">← Back to Home</a></div>
     </div>
 
 </body>

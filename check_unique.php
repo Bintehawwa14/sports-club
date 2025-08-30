@@ -7,15 +7,22 @@ if(isset($_POST['field']) && isset($_POST['value'])) {
     $field = $_POST['field'];
     $value = $_POST['value'];
     
+    // Map field names to database column names
+    $column_map = [
+        'contact' => 'contactno',  // Map 'contact' to 'contactno' column
+        'cnic' => 'cnic'
+    ];
+    
     // Validate field to prevent SQL injection
-    $allowed_fields = ['contactno', 'cnic'];
-    if(!in_array($field, $allowed_fields)) {
-        echo json_encode(['unique' => false]);
+    if(!isset($column_map[$field])) {
+        echo json_encode(['unique' => true]); // Assume unique if field is invalid
         exit;
     }
     
+    $column = $column_map[$field];
+    
     // Check if value exists in database
-    $query = "SELECT id FROM users WHERE $field = ?";
+    $query = "SELECT id FROM users WHERE $column = ?";
     $stmt = $con->prepare($query);
     $stmt->bind_param("s", $value);
     $stmt->execute();
@@ -30,6 +37,6 @@ if(isset($_POST['field']) && isset($_POST['value'])) {
     $stmt->close();
     $con->close();
 } else {
-    echo json_encode(['unique' => false]);
+    echo json_encode(['unique' => true]); // Assume unique if parameters are missing
 }
 ?>

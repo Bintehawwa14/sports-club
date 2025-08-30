@@ -135,7 +135,7 @@
       <li><a href="index.php">Home</a></li>
       <li><a href="Aboutus.php">About us</a></li>
       <li><a href="Sports.php">Sports</a></li>
-      <li><a href="event-selector.php">Match details</a></li>
+      <li><a href="event-selector.php">Schdule matches</a></li>
       <li><a href="matchesresult.php">Results</a></li>
       <li><a href="Contactus.php">Contact us</a></li>
     </ul>

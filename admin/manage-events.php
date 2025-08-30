@@ -1,24 +1,26 @@
-<?php session_start();
+<?php
+session_start();
 include_once('../include/db_connect.php');
 
-// for deleting event
+// For deleting event
 if (isset($_GET['id'])) {
-    $adminid = intval($_GET['id']); // SQL injection se bachne ke liye int banaya
+    $adminid = intval($_GET['id']); // Prevent SQL injection
 
-    // Pehle event ka status check karo
+    // Check event status
     $check = mysqli_query($con, "SELECT status FROM events WHERE id = '$adminid' LIMIT 1");
-      if ($status === 'active') {
-        $checkActive = mysqli_query($con, "SELECT id FROM events WHERE status = 'active'");
-        if (mysqli_num_rows($checkActive) > 0) {
-            echo "<script>alert('only on event can be activated at a time.'); window.location='manage-events.php';</script>";
-            exit;
-        }}
-
     if (mysqli_num_rows($check) > 0) {
         $data = mysqli_fetch_assoc($check);
 
         if ($data['status'] === 'active') {
-            echo "<script>alert('Active event can not be deleted!Deactivate if you want to delete'); window.location='manage-events.php';</script>";
+            $checkActive = mysqli_query($con, "SELECT id FROM events WHERE status = 'active'");
+            if (mysqli_num_rows($checkActive) > 0) {
+                echo "<script>alert('Only one event can be activated at a time.'); window.location='manage-events.php';</script>";
+                exit;
+            }
+        }
+
+        if ($data['status'] === 'active') {
+            echo "<script>alert('Active event cannot be deleted! Deactivate if you want to delete'); window.location='manage-events.php';</script>";
         } else {
             $msg = mysqli_query($con, "DELETE FROM events WHERE id = '$adminid'");
             if ($msg) {
@@ -31,8 +33,8 @@ if (isset($_GET['id'])) {
         echo "<script>alert('Event not found'); window.location='manage-events.php';</script>";
     }
 }
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,117 +45,30 @@ if (isset($_GET['id'])) {
     <meta name="author" content="" />
     <title>Manage Events</title>
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
-    <!-- <link href="../css/styles.css" rel="stylesheet" /> -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js" crossorigin="anonymous"></script>
-</head>
-<body class="sb-nav-fixed">
-    <?php include_once('includes/navbar.php');?>
-    <div id="layoutSidenav">
-        <?php include_once('includes/sidebar.php');?>
-        <div id="layoutSidenav_content">
-            <main>
-                <div class="container-fluid px-4">
-                    <h1 class="mt-4">Manage Events</h1>
-
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <i class="fas fa-table me-1"></i>
-                            Events Details
-                        </div>
-                        <div class="card-body">
-                            <table id="datatablesSimple">
-                                <thead>
-                                    <tr>
-                                        <th>Sno.</th>
-                                        <th>Event_Name</th>
-                                        <th>Start_Date</th>
-                                        <th>End_Date</th>
-                                        <th>Event Date </th>
-                                        <th>Event_Location</th>
-                                        <th>Sport</th>
-                                        <th>Action</th>
-                                        <th>Activate/Deactivate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    $ret = mysqli_query($con, "select * from events");
-                                    $cnt = 1;
-                                    while ($row = mysqli_fetch_array($ret)) { ?>
-                                    <tr>
-                                        <td><?php echo $cnt; ?></td>
-                                        <td><?php echo $row['event_name']; ?></td>
-                                        <td><?php echo $row['start_date']; ?></td>
-                                        <td><?php echo $row['end_date']; ?></td>
-                                           <td><?php echo $row['event_date']; ?></td>
-                                        <td><?php echo $row['event_location']; ?></td>
-                                        <td><?php echo $row['sport']; ?></td>
-                                        <td>
-                                            <!-- Edit button (pen icon) for each column -->
-                                            <a href="edit-event.php?id=<?php echo $row['id']; ?>" style="margin-right: 10px;">
-                                                <i class="fa fa-pen" aria-hidden="true" style="cursor: pointer; color: #007bff;"></i>
-                                            </a>
-                                            
-                                            <!-- Delete button -->
-                                             <a href="manage-events.php?id=<?php echo $row['id'];?>" onClick="return confirm('Do you really want to delete');"><i class="fa fa-trash" aria-hidden="true"></i></a>
-                                          
-                                          <a href="close_event.php?id=<?php echo $row['id']; ?>" 
-                            class="btn btn-sm" style= "background-color:white">
-                                <i class="fas fa-times" aria-hidden="true" style="cursor: pointer; color: #007bff;"></i>
-                            </a>
-
-                                                                                    
-                                    </td>
-                                    <td>
-                                    <?php if ($row['status'] == 'active') { ?>
-                                        <a class="btn btn-sm btn-danger" 
-                                        href="toggle-event.php?id=<?php echo $row['id']; ?>&status=inactive">
-                                        <i class="fa fa-toggle-off"></i> Deactivate
-                                        </a>
-                                    <?php } else { ?>
-                                        <a class="btn btn-sm btn-success" 
-                                        href="toggle-event.php?id=<?php echo $row['id']; ?>&status=active">
-                                        <i class="fa fa-toggle-on"></i> Activate
-                                        </a>
-                                    <?php } ?>
-                                        </td>
-                                    
-
-                                    </tr>
-                                    <?php $cnt = $cnt + 1; } ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-    <script src="../js/scripts.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
-    <script src="../js/datatables-simple-demo.js"></script>
     <style>
-        /* Manage Users Page Styles */
+        /* Manage Events Page Styles */
         .container-fluid {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 50px auto;
             padding: 30px;
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
-        
-        body{
-             margin: 0;
-        padding: 0;
-        background-image: url('../images/volleyballform.jpg');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        font-family: Arial, sans-serif;
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: url('../images/volleyballform.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: Arial, sans-serif;
         }
+
         h1 {
             font-size: 28px;
             margin-bottom: 20px;
@@ -177,13 +92,13 @@ if (isset($_GET['id'])) {
         }
 
         .card-body {
-            padding: 30px;
+            padding: 20px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 50px;
+            margin-bottom: 20px;
         }
 
         th, td {
@@ -207,26 +122,46 @@ if (isset($_GET['id'])) {
             background-color: #f5f5f5;
         }
 
-        .btn {
-            padding: 8px 15px;
-            background-color: #28a745;
-            color: #fff;
+        /* Action Buttons Container */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-buttons a, .action-buttons button {
             font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .action-buttons .btn-edit {
+            color: #fff;
+            background-color: #007bff;
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
         }
 
-        .btn-danger {
+        .action-buttons .btn-delete {
+            color: #fff;
             background-color: #dc3545;
+            border: none;
         }
 
-        .btn:hover {
-            background-color: #218838;
+        .action-buttons .btn-close {
+            color: #fff;
+            background-color: #6c757d;
+            border: none;
         }
 
-        .btn-danger:hover {
-            background-color: #c82333;
+        .action-buttons .btn-activate, .action-buttons .btn-deactivate {
+            min-width: 100px;
         }
 
         /* Responsive Styles */
@@ -242,9 +177,132 @@ if (isset($_GET['id'])) {
 
             th, td {
                 font-size: 14px;
-                padding: 10px;
+                padding: 8px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .action-buttons a, .action-buttons button {
+                width: 100%;
+                font-size: 12px;
+                padding: 8px;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 576px) {
+            th, td {
+                font-size: 12px;
+                padding: 6px;
+            }
+
+            .action-buttons a, .action-buttons button {
+                font-size: 11px;
+                padding: 6px;
             }
         }
     </style>
+</head>
+<body class="sb-nav-fixed">
+    <?php include_once('includes/navbar.php'); ?>
+    <div id="layoutSidenav">
+        <?php include_once('includes/sidebar.php'); ?>
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid px-4">
+                    <h1 class="mt-4">Manage Events</h1>
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-table me-1"></i>
+                            Events Details
+                        </div>
+                        <div class="card-body">
+                            <table id="datatablesSimple">
+                                <thead>
+                                    <tr>
+                                        <th>Sno.</th>
+                                        <th>Event_Name</th>
+                                        <th>Start_Date</th>
+                                        <th>End_Date</th>
+                                        <th>Event Date</th>
+                                        <th>Event_Location</th>
+                                        <th>Sport</th>
+                                        <th>Action</th>
+                                        <th>Activate/Deactivate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    $ret = mysqli_query($con, "SELECT * FROM events");
+                                    $cnt = 1;
+                                    while ($row = mysqli_fetch_array($ret)) { ?>
+                                    <tr>
+                                        <td><?php echo $cnt; ?></td>
+                                        <td><?php echo htmlspecialchars($row['event_name']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['start_date']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['end_date']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['event_date']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['event_location']); ?></td>
+                                        <td><?php echo htmlspecialchars($row['sport']); ?></td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a href="edit-event.php?id=<?php echo $row['id']; ?>" class="btn btn-edit">
+                                                    <i class="fa fa-pen" aria-hidden="true"></i> Edit
+                                                </a>
+                                                <a href="manage-events.php?id=<?php echo $row['id']; ?>" 
+                                                   class="btn btn-delete" 
+                                                   onclick="return confirm('Do you really want to delete');">
+                                                    <i class="fa fa-trash" aria-hidden="true"></i> Delete
+                                                </a>
+                                               <?php if ($row['is_closed'] == 'yes') { ?>
+                                            <button class="btn btn-sm btn-danger" disabled>
+                                                <i class="fas fa-times"></i> Closed
+                                            </button>
+                                        <?php } else { ?>
+                                            <a href="close_event.php?id=<?php echo $row['id']; ?>" 
+                                            class="btn btn-sm btn-warning" 
+                                            onclick="return confirm('Are you sure you want to close this event?');">
+                                                <i class="fas fa-times"></i> Close
+                                            </a>
+                                        <?php } ?>
+
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <?php if ($row['status'] == 'active') { ?>
+                                                    <a class="btn btn-deactivate btn-danger" 
+                                                       href="toggle-event.php?id=<?php echo $row['id']; ?>&status=inactive">
+                                                       <i class="fa fa-toggle-off"></i> Deactivate
+                                                    </a>
+                                                <?php } else { ?>
+                                                    <a class="btn btn-activate btn-success" 
+                                                       href="toggle-event.php?id=<?php echo $row['id']; ?>&status=active">
+                                                       <i class="fa fa-toggle-on"></i> Activate
+                                                    </a>
+                                                <?php } ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php $cnt++; } ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
+    <script src="../js/datatables-simple-demo.js"></script>
 </body>
 </html>

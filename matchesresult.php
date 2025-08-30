@@ -522,6 +522,7 @@ $match_result = $con->query($query);
             });
         });
     </script>
+    <?php require 'include/footer.php';?>
 </body>
 </html>
 <?php 

@@ -1,20 +1,17 @@
 <?php
-session_start();
-include_once('../include/db_connect.php');
+include '../include/db_connect.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $event_id = $_POST['event_id'];
-    $event_name = $_POST['event_name'];
+if (isset($_GET['id'])) {
+    $id = intval($_GET['id']);
 
-    // Update event status
-    $sql = "UPDATE events SET status='close' WHERE id='$event_id'";
-    mysqli_query($con, $sql);
+    // Event ko close mark karo
+    $update = mysqli_query($con, "UPDATE events SET is_closed='yes' WHERE id='$id'");
 
-    // Save message in session
-    $_SESSION['alert_message'] = "Registration is closed for $event_name";
-
-    // Redirect back to index
-    header("Location: ../index.php");
-    exit();
+    if ($update) {
+        header("Location: manage-events.php?msg=Event closed successfully");
+        exit;
+    } else {
+        echo "Error: " . mysqli_error($con);
+    }
 }
 ?>

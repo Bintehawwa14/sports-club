@@ -1,51 +1,56 @@
 <?php
 include_once('../../include/db_connect.php');
 
-if (isset($_POST['is_approved']) && isset($_POST['team_name']) && isset($_POST['game'])) {
-    $team_name = mysqli_real_escape_string($con, $_POST['teamName']);
+header('Content-Type: application/json'); // Set JSON header
+
+if (isset($_POST['is_approved'], $_POST['team_name'])) {
+    $team_name = mysqli_real_escape_string($con, $_POST['team_name']);
     $status = mysqli_real_escape_string($con, $_POST['is_approved']);
-    $game = mysqli_real_escape_string($con, $_POST['game']); // cricket, badminton, etc.
+    $response = ['success' => false, 'error' => '', 'team_status' => ''];
 
-    $player_table = $game . "_players";
-    $team_table = $game . "_teams";
+    $team_table = "cricket_teams";
+    $player_table = "cricket_players";
 
-    // ✅ Case 1: Individual Player Approval
-    if (isset($_POST['player1'])) {
+    // Approve individual player
+    if (isset($_POST['player_name'])) {
         $player_name = mysqli_real_escape_string($con, $_POST['player_name']);
-        $updatePlayer = "UPDATE $player_table SET is_approved='$status' 
-                         WHERE player_name='$player_name' AND teamName='$team_name'";
-        mysqli_query($con, $updatePlayer);
 
-        // Ab team ka status check karo
-        $checkPlayers = "SELECT COUNT(*) as pending_count 
-                         FROM $player_table 
-                         WHERE teamName='$team_name' AND is_approved='pending'";
-        $res = mysqli_query($con, $checkPlayers);
-        $row = mysqli_fetch_assoc($res);
+        $update = mysqli_query($con, "UPDATE $player_table 
+                                     SET is_approved='$status' 
+                                     WHERE player_name='$player_name' 
+                                       AND team_name='$team_name'");
 
-        if ($row['pending_count'] > 0) {
-            mysqli_query($con, "UPDATE $team_table SET is_approved='pending' WHERE teamName='$team_name'");
+        if ($update) {
+            // Check if any players are still pending
+            $check = mysqli_query($con, "SELECT COUNT(*) AS pending_count 
+                                         FROM $player_table 
+                                         WHERE team_name='$team_name' 
+                                           AND is_approved='pending'");
+            $row = mysqli_fetch_assoc($check);
+
+            // Update team status
+            $team_status = ($row['pending_count'] > 0) ? 'pending' : 'approved';
+            $team_update = mysqli_query($con, "UPDATE $team_table 
+                                              SET is_approved='$team_status' 
+                                              WHERE team_name='$team_name'");
+
+            if ($team_update) {
+                $response['success'] = true;
+                $response['team_status'] = $team_status;
+            } else {
+                $response['error'] = 'Failed to update team status';
+            }
         } else {
-            mysqli_query($con, "UPDATE $team_table SET is_approved='approved' WHERE teamName='$team_name'");
+            $response['error'] = 'Failed to update player status';
         }
-    } 
-    // ✅ Case 2: Full Team Approval directly from all_teams.php
-    else {
-        $updateTeam = "UPDATE $team_table SET is_approved='$status' WHERE teamName='$team_name'";
-        mysqli_query($con, $updateTeam);
-
-        // Agar admin ne full team approved ki, to sare players bhi approve ho jayein
-        if ($status == 'approved') {
-            mysqli_query($con, "UPDATE $player_table SET is_approved='approved' WHERE teamName='$team_name'");
-        }
-    }
-
-    // Redirect back
-    if (isset($_POST['redirect_back'])) {
-        header("Location: " . $_POST['redirect_back']);
     } else {
-        header("Location: all_teams.php");
+        $response['error'] = 'Player name not provided';
     }
+
+    echo json_encode($response);
+    exit();
+} else {
+    echo json_encode(['success' => false, 'error' => 'Invalid request']);
     exit();
 }
 ?>

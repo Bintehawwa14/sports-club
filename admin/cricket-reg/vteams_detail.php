@@ -5,22 +5,27 @@ if (!isset($_GET['team_name'])) {
     die("Team not selected.");
 }
 
-$teamName = mysqli_real_escape_string($con, $_GET['team_name']);
+$teamName = $_GET['team_name'];
 
-// Team ke players fetch
-$sql = "SELECT player_name, age, position, height, handedness, weight, standing_reach, 
-               block_jump, approach_jump, chronic_illness, allergies, medications, surgeries, previous_injuries, 
-                is_approved 
-        FROM volleyball_players 
-        WHERE team_name = '$teamName'";
-$result = mysqli_query($con, $sql);
+// Fetch players of the team using prepared statement
+$stmt = $con->prepare("SELECT player_name, age, position, height, handedness, weight, standing_reach, 
+                       block_jump, approach_jump, chronic_illness, allergies, medications, surgeries, 
+                       previous_injuries, is_approved 
+                       FROM volleyball_players 
+                       WHERE team_name = ?");
+$stmt->bind_param("s", $teamName);
+$stmt->execute();
+$result = $stmt->get_result();
 
-// Player approval check
-$checkPlayers = "SELECT COUNT(*) as not_approved_count 
-                 FROM volleyball_players 
-                 WHERE team_name = '$teamName' AND is_approved != 'approved'";
-$checkResult = mysqli_query($con, $checkPlayers);
-$checkRow = mysqli_fetch_assoc($checkResult);
+// Check overall team approval status
+$stmt_check = $con->prepare("SELECT COUNT(*) as not_approved_count 
+                             FROM volleyball_players 
+                             WHERE team_name = ? AND is_approved != 'approved'");
+$stmt_check->bind_param("s", $teamName);
+$stmt_check->execute();
+$checkResult = $stmt_check->get_result();
+$checkRow = $checkResult->fetch_assoc();
+$teamStatus = ($checkRow['not_approved_count'] == 0) ? 'approved' : 'pending';
 ?>
 
 <!DOCTYPE html>
@@ -31,67 +36,92 @@ $checkRow = mysqli_fetch_assoc($checkResult);
 </head>
 <body class="container mt-4">
 
-    <h2>Volleyball Team: <?php echo htmlspecialchars($teamName); ?></h2>
+    <h2>
+        Volleyball Team: <?php echo htmlspecialchars($teamName); ?>
+        <span id="team-status" class="badge <?php echo ($teamStatus == 'approved') ? 'bg-success' : 'bg-warning'; ?>">
+            <?php echo strtoupper($teamStatus); ?>
+        </span>
+    </h2>
     <a href="all_teams.php" class="btn btn-secondary mb-3">⬅ Back</a>
 
-<table class="table table-bordered table-striped">
-    <thead class="table-dark">
-        <tr>
-            <th>Player Name</th>
-            <th>Age</th>
-            <th>Position</th>
-            <th>Height</th>
-            <th>Handedness</th>
-            <th>Weight</th>
-            <th>Standing Reach</th>
-            <th>Block Jump</th>
-            <th>Approach Jump</th>
-            <th>Chronic Illness</th>
-            <th>Allergies</th>
-            <th>Medications</th>
-            <th>Surgeries</th>
-            <th>Previous Injuries</th>
-            <th>Approval Status</th>
-        </tr>
-    </thead>
-    <tbody>
-    <?php if (mysqli_num_rows($result) > 0) { 
-        while ($row = mysqli_fetch_assoc($result)) { ?>
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
             <tr>
-                <td><?php echo htmlspecialchars($row['player_name']); ?></td>
-                <td><?php echo htmlspecialchars($row['age']); ?></td>
-                <td><?php echo htmlspecialchars($row['position']); ?></td>
-                <td><?php echo htmlspecialchars($row['height']); ?></td>
-                <td><?php echo htmlspecialchars($row['handedness']); ?></td>
-                <td><?php echo htmlspecialchars($row['weight']); ?></td>
-                <td><?php echo htmlspecialchars($row['standing_reach']); ?></td>
-                <td><?php echo htmlspecialchars($row['block_jump']); ?></td>
-                <td><?php echo htmlspecialchars($row['approach_jump']); ?></td>
-                <td><?php echo htmlspecialchars($row['chronic_illness']); ?></td>
-                <td><?php echo htmlspecialchars($row['allergies']); ?></td>
-                <td><?php echo htmlspecialchars($row['medications']); ?></td>
-                <td><?php echo htmlspecialchars($row['surgeries']); ?></td>
-                <td><?php echo htmlspecialchars($row['previous_injuries']); ?></td>
-                
-                <td>
-                    <form method="post" action="update_statusv.php">
-                        <input type="hidden" name="player_name" value="<?php echo $row['player_name']; ?>">
-                        <input type="hidden" name="team_name" value="<?php echo $teamName; ?>">
-                        <input type="hidden" name="game" value="volleyball"> <!-- 👈 zaroori -->
-                        <input type="hidden" name="redirect_back" value="<?php echo $_SERVER['REQUEST_URI']; ?>">
-                        <select name="is_approved" onchange="this.form.submit()">
-                            <option value="pending" <?php if($row['is_approved']=='pending') echo 'selected'; ?>>Pending</option>
-                            <option value="approved" <?php if($row['is_approved']=='approved') echo 'selected'; ?>>Approved</option>
-                        </select>
-                    </form>
-                </td>
+                <th>Player Name</th>
+                <th>Age</th>
+                <th>Position</th>
+                <th>Height</th>
+                <th>Handedness</th>
+                <th>Weight</th>
+                <th>Standing Reach</th>
+                <th>Block Jump</th>
+                <th>Approach Jump</th>
+                <th>Chronic Illness</th>
+                <th>Allergies</th>
+                <th>Medications</th>
+                <th>Surgeries</th>
+                <th>Previous Injuries</th>
+                <th>Approval Status</th>
             </tr>
-        <?php } 
-    } else { ?>
-        <tr><td colspan="16" class="text-center">No players found for this team</td></tr>
-    <?php } ?>
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+        <?php if ($result->num_rows > 0) { 
+            while ($row = $result->fetch_assoc()) { ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['player_name']); ?></td>
+                    <td><?php echo htmlspecialchars($row['age']); ?></td>
+                    <td><?php echo htmlspecialchars($row['position']); ?></td>
+                    <td><?php echo htmlspecialchars($row['height']); ?></td>
+                    <td><?php echo htmlspecialchars($row['handedness']); ?></td>
+                    <td><?php echo htmlspecialchars($row['weight']); ?></td>
+                    <td><?php echo htmlspecialchars($row['standing_reach']); ?></td>
+                    <td><?php echo htmlspecialchars($row['block_jump']); ?></td>
+                    <td><?php echo htmlspecialchars($row['approach_jump']); ?></td>
+                    <td><?php echo htmlspecialchars($row['chronic_illness']); ?></td>
+                    <td><?php echo htmlspecialchars($row['allergies']); ?></td>
+                    <td><?php echo htmlspecialchars($row['medications']); ?></td>
+                    <td><?php echo htmlspecialchars($row['surgeries']); ?></td>
+                    <td><?php echo htmlspecialchars($row['previous_injuries']); ?></td>
+                    <td>
+                        <select onchange="updatePlayerStatus('<?php echo htmlspecialchars($row['player_name']); ?>', '<?php echo htmlspecialchars($teamName); ?>', this.value)">
+                            <option value="pending" <?php if ($row['is_approved'] == 'pending') echo 'selected'; ?>>Pending</option>
+                            <option value="approved" <?php if ($row['is_approved'] == 'approved') echo 'selected'; ?>>Approved</option>
+                        </select>
+                    </td>
+                </tr>
+            <?php } 
+        } else { ?>
+            <tr><td colspan="15" class="text-center">No players found for this team</td></tr>
+        <?php } ?>
+        </tbody>
+    </table>
 
+    <script>
+    function updatePlayerStatus(playerName, teamName, status) {
+        let formData = new FormData();
+        formData.append('player_name', playerName);
+        formData.append('team_name', teamName);
+        formData.append('is_approved', status);
+        formData.append('game', 'volleyball');
+
+        fetch('update_statusv.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let statusElement = document.getElementById('team-status');
+                statusElement.textContent = data.team_status.toUpperCase();
+                statusElement.className = 'badge ' + (data.team_status === 'approved' ? 'bg-success' : 'bg-warning');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(err => alert('Request failed: ' + err));
+    }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

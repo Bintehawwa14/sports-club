@@ -15,10 +15,10 @@
       <ul style="list-style: none; padding: 0; margin: 0;">
         <li><a href="#about" style="color: white; text-decoration: none;">About Us</a></li>
         <li><a href="Sports.php" style="color: white; text-decoration: none;">Sports</a></li>
-            <li><a href="match_details.php" style="color: white; text-decoration: none;">Match Schedule</a></li>
-        <li><a href="results.php" style="color: white; text-decoration: none;">Results</a></li>
+            <li><a href="event-selector.php" style="color: white; text-decoration: none;">Match Schedule</a></li>
+        <li><a href="matchesresult.php" style="color: white; text-decoration: none;">Results</a></li>
         <li><a href="Contactus.php" style="color: white; text-decoration: none;">Contact Us</a></li>
-        <li><a href="#" style="color: white; text-decoration: none;">News & Events</a></li>
+        <li><a href="#events-news" style="color: white; text-decoration: none;">News & Events</a></li>
         <li><a href="#faqs" style="color: white; text-decoration: none;">FAQs</a></li>
        
       </ul>

@@ -1,3 +1,4 @@
+```php
 <?php
 session_start();
 include_once('../include/db_connect.php');
@@ -6,23 +7,31 @@ if (!isset($_SESSION['userid'])) {
     header('location:logout.php');
     exit;
 } 
-// Fetch all active sports from events table
-$query = "SELECT DISTINCT sport FROM events WHERE status='active' ORDER BY sport ASC";
+
+if (!isset($_GET['event_id']) || !isset($_GET['event_name'])) {
+    echo "<script>alert('Invalid Request! Please select an event.'); window.location.href='get_event.php';</script>";
+    exit;
+}
+
+// Get event_id and event_name
+$event_id = mysqli_real_escape_string($con, $_GET['event_id']);
+$event_name = mysqli_real_escape_string($con, $_GET['event_name']);
+
+// Fetch sports for this specific event
+$query = "SELECT sport FROM events WHERE id='$event_id' AND event_name='$event_name' AND status='active'";
 $result = mysqli_query($con, $query);
 
 $sports = [];
-if (mysqli_num_rows($result) > 0) {
-    while ($row = mysqli_fetch_assoc($result)) {
-        $splitSports = explode(',', $row['sport']); // split by comma
-        foreach ($splitSports as $sp) {
-            $sports[] = trim($sp);
-        }
+if ($row = mysqli_fetch_assoc($result)) {
+    $splitSports = explode(',', $row['sport']); // split by comma
+    foreach ($splitSports as $sp) {
+        $sports[] = trim($sp);
     }
+} else {
+    echo "<script>alert('Invalid event. Please select a valid event.'); window.location.href='get_event.php';</script>";
+    exit;
 }
-
-// Remove duplicates
-$sports = array_unique($sports);?>
-
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -73,8 +82,25 @@ $sports = array_unique($sports);?>
             border-radius: 10px;
             color: #fff;
         }
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 15px;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+            transition: 0.3s ease-in-out;
+        }
+        .back-btn:hover {
+            background: linear-gradient(135deg, #ff4b2b, #ff416c);
+            transform: translateY(-3px);
+            box-shadow: 0px 6px 12px rgba(0,0,0,0.3);
+        }
     </style>
-   
 </head>
 <body class="sb-nav-fixed">
 <?php include_once('includes/navbar.php'); ?>
@@ -85,44 +111,22 @@ $sports = array_unique($sports);?>
     <a href="get_event.php" class="back-btn">⬅ Back</a>
     <div class="box">
         <?php if (empty($sports)): ?>
-            <div class="message">Currently no event is open for registration.</div>
+            <div class="message">Currently no sport is available for this event.</div>
         <?php else: ?>
-            <h1>Registration is open for:</h1>
+            <h1>Registration is open for "<?php echo htmlspecialchars($event_name); ?>"</h1>
             <?php foreach ($sports as $sport): ?>
                 <?php 
-                // Convert sport name to lowercase and remove spaces for filename
                 $fileName = strtolower(str_replace(' ', '', $sport));
                 ?>
-                <a href="../reg/<?php echo $fileName; ?>.php" class="join-btn">
+                <a href="../reg/<?php echo $fileName; ?>.php?event_id=<?php echo $event_id; ?>&event_name=<?php echo urlencode($event_name); ?>" class="join-btn">
                     Join <?php echo htmlspecialchars($sport); ?>
                 </a>
             <?php endforeach; ?>
         <?php endif; ?>
-         
     </div>
 </main>
 </div>
 </div>
 </body>
 </html>
- 
-<style>
-.back-btn {
-    display: inline-block;
-    padding: 10px 20px;
-    margin-top: 15px;
-    background: linear-gradient(135deg, #ff416c, #ff4b2b);
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 8px;
-    text-decoration: none;
-    box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
-    transition: 0.3s ease-in-out;
-}
-.back-btn:hover {
-    background: linear-gradient(135deg, #ff4b2b, #ff416c);
-    transform: translateY(-3px);
-    box-shadow: 0px 6px 12px rgba(0,0,0,0.3);
-}
-</style>
+```

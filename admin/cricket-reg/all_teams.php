@@ -46,25 +46,27 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
                 <td><?= htmlspecialchars($row['email']); ?></td>
                 <td><?= htmlspecialchars($row['game']); ?></td>
                
-                       <td>
+                <td>
                     <!-- Approve dropdown -->
-        <form method="post" action="update_status.php">
-        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['team_name']); ?>">
-        <select name="is_approved" onchange="this.form.submit()">
-            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
-            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-        </select>
-    </form>
-<td>         
-<a href="cteams_detail.php?team_name=<?php echo urlencode($row['team_name']); ?>" class="btn btn-primary btn-sm">Details</a>
-
-<a href="delete.php?game=cricket&teamName=<?= urlencode($row['team_name']); ?>"
-   class="btn btn-danger btn-sm"
-   onclick="return confirm('Are you sure you want to delete this team?');">
-   🗑
-</a>
-        </td>
-</td>
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="cricket">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['team_name']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
+                
+                <td>         
+                    <a href="cteams_detail.php?team_name=<?php echo urlencode($row['team_name']); ?>" class="btn btn-primary btn-sm">Details</a>
+                    <a href="delete.php?game=cricket&team_name=<?= urlencode($row['team_name']); ?>"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete this team?');">
+                       🗑
+                    </a>
+                </td>
             </tr>
         <?php } ?>
     </tbody>
@@ -102,25 +104,26 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
                 <td><?= htmlspecialchars($row['role']); ?></td>
                 <td><?= htmlspecialchars($row['game']); ?></td>
                 <td>
-                            <!-- Approve dropdown -->
-                <form method="post" action="update_statusb.php">
-                <input type="hidden" name="teamName" value="<?= htmlspecialchars($row['teamName']); ?>">
-                <select name="is_approved" onchange="this.form.submit()">
-                    <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
-                    <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-                </select>
-                </form>
-        </td>
+                    <!-- Approve dropdown -->
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="badminton">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
                 
-        <td>   
-            <a href="bteams_detail.php?teamName=<?php echo urlencode($row['teamName']); ?>" class="btn btn-primary btn-sm">Details</a>
-
-            <a href="delete.php?game=cricket&teamName=<?= urlencode($row['teamName']); ?>"
-            class="btn btn-danger btn-sm"
-            onclick="return confirm('Are you sure you want to delete this team?');">
-            🗑
-            </a>
-        </td>
+                <td>   
+                    <a href="bteams_detail.php?teamName=<?php echo urlencode($row['teamName']); ?>" class="btn btn-primary btn-sm">Details</a>
+                    <a href="delete.php?game=badminton&team_name=<?= urlencode($row['teamName']); ?>"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete this team?');">
+                       🗑
+                    </a>
+                </td>
             </tr>
         
         <?php } ?>
@@ -155,20 +158,23 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
                 <td><?= htmlspecialchars($row['role']); ?></td>
                 <td><?= htmlspecialchars($row['game']); ?></td>
                 <td>
-                 <form method="post" action="update_statusb.php">
-        <input type="hidden" name="teamName" value="<?= htmlspecialchars($row['teamName']); ?>">
-        <select name="is_approved" onchange="this.form.submit()">
-            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
-            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-        </select>
-    </form>
-            </td>
-            <td>
-                    <a href="delete.php?game=cricket&teamName=<?= urlencode($row['teamName']); ?>"
-                    class="btn btn-danger btn-sm"
-                    onclick="return confirm('Are you sure you want to delete this team?');">
-                    🗑
-                   </a></td>
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="badminton">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
+                <td>
+                    <a href="delete.php?game=badminton&team_name=<?= urlencode($row['teamName']); ?>"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete this player?');">
+                       🗑
+                   </a>
+                </td>
             </tr>
         <?php } ?>
     </tbody>
@@ -206,25 +212,26 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
                 <td><?= htmlspecialchars($row['player2']); ?></td>
                 <td><?= htmlspecialchars($row['game']); ?></td>
                 <td><?= htmlspecialchars($row['role']); ?></td>
-        <td>
+                <td>
                     <!-- Approve dropdown -->
-        <form method="post" action="update_status.php">
-        <input type="hidden" name="teamName" value="<?= htmlspecialchars($row['teamName']); ?>">
-        <select name="is_approved" onchange="this.form.submit()">
-            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
-            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-        </select>
-    </form>
-<td>         
-<a href="ttteams_detail.php?teamName=<?php echo urlencode($row['teamName']); ?>" class="btn btn-primary btn-sm">Details</a>
-
-<a href="delete.php?game=cricket&teamName=<?= urlencode($row['teamName']); ?>"
-   class="btn btn-danger btn-sm"
-   onclick="return confirm('Are you sure you want to delete this team?');">
-   🗑
-</a>
-        </td>
-</td>
+                    <form method="post" action="update_status.php">
+                        <input type="hidden" name="game" value="tabletennis">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
+                </td>
+                <td>         
+                    <a href="ttteams_detail.php?teamName=<?php echo urlencode($row['teamName']); ?>" class="btn btn-primary btn-sm">Details</a>
+                    <a href="delete.php?game=tabletennis&team_name=<?= urlencode($row['teamName']); ?>"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete this team?');">
+                       🗑
+                    </a>
+                </td>
             </tr>
         <?php } ?>
     </tbody>
@@ -258,20 +265,22 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
                 <td><?= htmlspecialchars($row['game']); ?></td>
                 <td><?= htmlspecialchars($row['role']); ?></td>
                 <td>
-                                <!-- Approve dropdown -->
-                <form method="post" action="update_status.php">
-                <input type="hidden" name="teamName" value="<?= htmlspecialchars($row['teamName']); ?>">
-                <select name="is_approved" onchange="this.form.submit()">
-                    <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
-                    <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-                </select>
-            </form>
+                    <!-- Approve dropdown -->
+                    <form method="post" action="update_statust.php">
+                        <input type="hidden" name="game" value="tabletennis">
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
+                    </form>
                 </td>
                 <td>
-                    <a href="delete.php?game=cricket&teamName=<?= urlencode($row['teamName']); ?>"
-                    class="btn btn-danger btn-sm"
-                    onclick="return confirm('Are you sure you want to delete this team?');">
-                    🗑
+                    <a href="delete.php?game=tabletennis&team_name=<?= urlencode($row['teamName']); ?>"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Are you sure you want to delete this player?');">
+                       🗑
                    </a>
                </td>
             </tr>
@@ -316,17 +325,18 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
                 <td><?= htmlspecialchars($row['captain_chronic_illness']); ?></td>
                 <td>
                     <!-- Approve dropdown -->
-                    <form method="post" action="update_status.php">
+                    <form method="post" action="update_statusv.php">
+                        <input type="hidden" name="game" value="volleyball">
                         <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['team_name']); ?>">
-                        <select name="is_approved" onchange="this.form.submit()">
+                        <!-- <select name="is_approved" onchange="this.form.submit()">
                             <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
                             <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-                        </select>
+                        </select> -->
+                        <?= htmlspecialchars($row['is_approved']); ?>
                     </form>
                 </td>
                 <td>
                     <a href="vteams_detail.php?team_name=<?= urlencode($row['team_name']); ?>" class="btn btn-primary btn-sm">Details</a>
-
                     <a href="delete.php?game=volleyball&team_name=<?= urlencode($row['team_name']); ?>"
                        class="btn btn-danger btn-sm"
                        onclick="return confirm('Are you sure you want to delete this team?');">
@@ -337,7 +347,6 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
         <?php } ?>
     </tbody>
 </table>
-
 
 </body>
 </html>
