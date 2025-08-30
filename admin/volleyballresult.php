@@ -495,10 +495,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['match_id'])) {
                 const teamB = teamBInputs[index].value.trim();
                 
                 if (teamA.toLowerCase() === teamB.toLowerCase()) {
-                    markAsInvalid(input, `Match ${index+1}: Team A and Team B must be different`);
-                    markAsInvalid(teamBInputs[index], `Match ${index+1}: Team A and Team B must be different`);
+                    markAsInvalid(input, Match ${index+1}: Team A and Team B must be different);
+                    markAsInvalid(teamBInputs[index], Match ${index+1}: Team A and Team B must be different);
                     isValid = false;
-                    errorMessages.push(`Match ${index+1}: Team A and Team B must be different`);
+                    errorMessages.push(Match ${index+1}: Team A and Team B must be different);
                 }
             });
             
@@ -512,24 +512,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['match_id'])) {
                 
                 if (scoreA < 0 || scoreB < 0) {
                     if (scoreA < 0) {
-                        markAsInvalid(input, `Match ${index+1}: Scores cannot be negative`);
-                        errorMessages.push(`Match ${index+1}: Team A score cannot be negative`);
+                        markAsInvalid(input, Match ${index+1}: Scores cannot be negative);
+                        errorMessages.push(Match ${index+1}: Team A score cannot be negative);
                     }
                     if (scoreB < 0) {
-                        markAsInvalid(scoreBInputs[index], `Match ${index+1}: Scores cannot be negative`);
-                        errorMessages.push(`Match ${index+1}: Team B score cannot be negative`);
+                        markAsInvalid(scoreBInputs[index], Match ${index+1}: Scores cannot be negative);
+                        errorMessages.push(Match ${index+1}: Team B score cannot be negative);
                     }
                     isValid = false;
                 }
                 
                 if (scoreA > 5 || scoreB > 5) {
                     if (scoreA > 5) {
-                        markAsInvalid(input, `Match ${index+1}: Score cannot exceed 5 sets`);
-                        errorMessages.push(`Match ${index+1}: Team A score cannot exceed 5 sets`);
+                        markAsInvalid(input, Match ${index+1}: Score cannot exceed 5 sets);
+                        errorMessages.push(Match ${index+1}: Team A score cannot exceed 5 sets);
                     }
                     if (scoreB > 5) {
-                        markAsInvalid(scoreBInputs[index], `Match ${index+1}: Score cannot exceed 5 sets`);
-                        errorMessages.push(`Match ${index+1}: Team B score cannot exceed 5 sets`);
+                        markAsInvalid(scoreBInputs[index], Match ${index+1}: Score cannot exceed 5 sets);
+                        errorMessages.push(Match ${index+1}: Team B score cannot exceed 5 sets);
                     }
                     isValid = false;
                 }
@@ -661,33 +661,33 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['match_id'])) {
             let scoreB = parseInt(block.querySelector("input[name='score_b[]']").value);
 
             if (new Date(date) > new Date()) {
-                messages.push(`Match ${index+1}: Date cannot be in the future.`);
+                messages.push(Match ${index+1}: Date cannot be in the future.);
                 valid = false;
             }
             if (teamA.toLowerCase() === teamB.toLowerCase()) {
-                messages.push(`Match ${index+1}: Team A and Team B must be different.`);
+                messages.push(Match ${index+1}: Team A and Team B must be different.);
                 valid = false;
             }
             if (scoreA < 0 || scoreB < 0) {
-                messages.push(`Match ${index+1}: Scores cannot be negative.`);
+                messages.push(Match ${index+1}: Scores cannot be negative.);
                 valid = false;
             }
 
             // Detailed Sets Validation
             for (let set = 1; set <= 5; set++) {
-                let setA = parseInt(block.querySelector(`input[name='set${set}_team_a[]']`).value || 0);
-                let setB = parseInt(block.querySelector(`input[name='set${set}_team_b[]']`).value || 0);
+                let setA = parseInt(block.querySelector(input[name='set${set}_team_a[]']).value || 0);
+                let setB = parseInt(block.querySelector(input[name='set${set}_team_b[]']).value || 0);
 
                 if (setA > 30 || setB > 30) {
-                    messages.push(`Match ${index+1}, Set ${set}: Points cannot exceed 30.`);
+                    messages.push(Match ${index+1}, Set ${set}: Points cannot exceed 30.);
                     valid = false;
                 }
 
                 // errors/faults validation
-                let errorsA = parseInt(block.querySelector(`input[name='set${set}_errors_a[]']`)?.value || 0);
-                let errorsB = parseInt(block.querySelector(`input[name='set${set}_errors_b[]']`)?.value || 0);
+                let errorsA = parseInt(block.querySelector(input[name='set${set}_errors_a[]'])?.value || 0);
+                let errorsB = parseInt(block.querySelector(input[name='set${set}_errors_b[]'])?.value || 0);
                 if (errorsA > 10 || errorsB > 10) {
-                    messages.push(`Match ${index+1}, Set ${set}: Errors cannot exceed 10.`);
+                    messages.push(Match ${index+1}, Set ${set}: Errors cannot exceed 10.);
                     valid = false;
                 }
             }

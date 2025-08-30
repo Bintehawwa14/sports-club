@@ -279,14 +279,14 @@ if (isset($_GET['id'])) {
                                         <td>
                                             <div class="action-buttons">
                                                 <?php if ($row['status'] == 'active') { ?>
-                                                    <a class="btn btn-deactivate btn-danger" 
+                                                    <a class="btn btn-deactivate btn-success" 
                                                        href="toggle-event.php?id=<?php echo $row['id']; ?>&status=inactive">
-                                                       <i class="fa fa-toggle-off"></i> Deactivate
+                                                       <i class="fa fa-toggle-on"></i> Activated
                                                     </a>
                                                 <?php } else { ?>
-                                                    <a class="btn btn-activate btn-success" 
+                                                    <a class="btn btn-activate btn-danger" 
                                                        href="toggle-event.php?id=<?php echo $row['id']; ?>&status=active">
-                                                       <i class="fa fa-toggle-on"></i> Activate
+                                                       <i class="fa fa-toggle-off"></i> Deactivated
                                                     </a>
                                                 <?php } ?>
                                             </div>

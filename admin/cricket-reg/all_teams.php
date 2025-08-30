@@ -108,11 +108,10 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
                     <form method="post" action="update_status.php">
                         <input type="hidden" name="game" value="badminton">
                         <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
-                        <!-- <select name="is_approved" onchange="this.form.submit()">
+                        <select name="is_approved" onchange="this.form.submit()">
                             <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
                             <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-                        </select> -->
-                        <?= htmlspecialchars($row['is_approved']); ?>
+                        </select>
                     </form>
                 </td>
                 
@@ -129,8 +128,7 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
         <?php } ?>
     </tbody>
 </table>
-
-<!-- Badminton Players-->
+<!-- Badminton Players -->
 <h3>Badminton Players</h3>
 <table class="table table-bordered table-striped">
     <thead class="table-dark">
@@ -145,38 +143,46 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
         </tr>
     </thead>
     <tbody>
-         <?php 
+        <?php 
         mysqli_data_seek($badmintonTeams, 0);
-        while($row = mysqli_fetch_assoc($badmintonTeams)) 
-            if(strtolower($row['role']) == 'player') {
+        $hasSingles = false;
+        while($row = mysqli_fetch_assoc($badmintonTeams)) {
+            if (strtolower($row['role']) === 'single' || strtolower($row['role']) === 'player') { 
+                $hasSingles = true;
                 $status = isset($row['is_approved']) ? $row['is_approved'] : 'pending';
         ?>
             <tr>
-                <td><?= htmlspecialchars($row['fullName']); ?></td>
-                <td><?= htmlspecialchars($row['email']); ?></td>
-                <td><?= htmlspecialchars($row['player1']); ?></td>
-                <td><?= htmlspecialchars($row['role']); ?></td>
-                <td><?= htmlspecialchars($row['game']); ?></td>
+                <td><?= htmlspecialchars($row['fullName'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['email'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['player1'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['role'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['game'] ?? 'N/A'); ?></td>
                 <td>
                     <form method="post" action="update_status.php">
                         <input type="hidden" name="game" value="badminton">
-                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
-                        <!-- <select name="is_approved" onchange="this.form.submit()">
-                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
-                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-                        </select> -->
-                        <?= htmlspecialchars($row['is_approved']); ?>
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName'] ?? $row['player1'] ?? ''); ?>">
+                        <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($status === 'pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($status === 'approved') ? 'selected' : ''; ?>>Approved</option>
+                            <option value="not_approved" <?= ($status === 'not_approved') ? 'selected' : ''; ?>>Not Approved</option>
+                        </select>
                     </form>
                 </td>
                 <td>
-                    <a href="delete.php?game=badminton&team_name=<?= urlencode($row['teamName']); ?>"
+                    <a href="delete.php?game=badminton&team_name=<?= urlencode($row['teamName'] ?? $row['player1'] ?? ''); ?>"
                        class="btn btn-danger btn-sm"
                        onclick="return confirm('Are you sure you want to delete this player?');">
                        🗑
-                   </a>
+                    </a>
                 </td>
             </tr>
-        <?php } ?>
+        <?php 
+            }
+        }
+        if (!$hasSingles) {
+            echo "<tr><td colspan='7' class='text-center text-muted'>No Singles players found.</td></tr>";
+        }
+        ?>
     </tbody>
 </table>
 
@@ -238,7 +244,7 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
 </table>
 
 <!-- Table Tennis Players -->
-<h3>Table Tennis players</h3>
+<h3>Table Tennis Players</h3>
 <table class="table table-bordered table-striped">
     <thead class="table-dark">
         <tr>
@@ -254,40 +260,47 @@ captain_surgeries,captain_previous_injuries,registration_date,is_approved FROM v
     <tbody>
         <?php 
         mysqli_data_seek($tabletennisTeams, 0);
-        while($row = mysqli_fetch_assoc($tabletennisTeams)) 
-            if(strtolower($row['role']) == 'single') { 
+        $hasSingles = false;
+        while($row = mysqli_fetch_assoc($tabletennisTeams)) {
+            if (strtolower($row['role']) === 'single' || strtolower($row['role']) === 'player') { 
+                $hasSingles = true;
                 $status = isset($row['is_approved']) ? $row['is_approved'] : 'pending';
         ?>
             <tr>
-                <td><?= htmlspecialchars($row['fullName']); ?></td>
-                <td><?= htmlspecialchars($row['email']); ?></td>
-                <td><?= htmlspecialchars($row['player1']); ?></td>
-                <td><?= htmlspecialchars($row['game']); ?></td>
-                <td><?= htmlspecialchars($row['role']); ?></td>
+                <td><?= htmlspecialchars($row['fullName'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['email'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['player1'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['game'] ?? 'N/A'); ?></td>
+                <td><?= htmlspecialchars($row['role'] ?? 'N/A'); ?></td>
                 <td>
-                    <!-- Approve dropdown -->
                     <form method="post" action="update_statust.php">
                         <input type="hidden" name="game" value="tabletennis">
-                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName']); ?>">
-                        <!-- <select name="is_approved" onchange="this.form.submit()">
-                            <option value="pending" <?= ($row['is_approved']=='pending') ? 'selected' : ''; ?>>Pending</option>
-                            <option value="approved" <?= ($row['is_approved']=='approved') ? 'selected' : ''; ?>>Approved</option>
-                        </select> -->
-                        <?= htmlspecialchars($row['is_approved']); ?>
+                        <input type="hidden" name="team_name" value="<?= htmlspecialchars($row['teamName'] ?? $row['player1'] ?? ''); ?>">
+                        <select name="is_approved" onchange="this.form.submit()">
+                            <option value="pending" <?= ($status === 'pending') ? 'selected' : ''; ?>>Pending</option>
+                            <option value="approved" <?= ($status === 'approved') ? 'selected' : ''; ?>>Approved</option>
+                            <option value="not_approved" <?= ($status === 'not_approved') ? 'selected' : ''; ?>>Not Approved</option>
+                        </select>
                     </form>
                 </td>
                 <td>
-                    <a href="delete.php?game=tabletennis&team_name=<?= urlencode($row['teamName']); ?>"
+                    <a href="delete.php?game=tabletennis&team_name=<?= urlencode($row['teamName'] ?? $row['player1'] ?? ''); ?>"
                        class="btn btn-danger btn-sm"
                        onclick="return confirm('Are you sure you want to delete this player?');">
                        🗑
-                   </a>
-               </td>
+                    </a>
+                </td>
             </tr>
-        <?php } ?>
+        <?php 
+            }
+        }
+        if (!$hasSingles) {
+            echo "<tr><td colspan='7' class='text-center text-muted'>No players found.</td></tr>";
+        }
+        ?>
     </tbody>
 </table>
-                						
+</table>						
 <h3>Volleyball Teams</h3>
 <table class="table table-bordered table-striped">
     <thead class="table-dark">

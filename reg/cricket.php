@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require '../include/db_connect.php';
@@ -89,7 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Check if team name already exists for this event
     $teamCheck = mysqli_query($con, "SELECT * FROM cricket_teams WHERE team_name = '$teamName' AND event_name = '$event_name'");
     if (mysqli_num_rows($teamCheck) > 0) {
-        echo "<script>alert('⚠️ Team name already exists for this event! Please choose a different name.'); window.location.href='" . $_SERVER['PHP_SELF'] . "?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
+        echo "<script>alert('⚠ Team name already exists for this event! Please choose a different name.'); window.location.href='" . $_SERVER['PHP_SELF'] . "?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
         exit();
     }
 
@@ -130,21 +129,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-image: url(../images/cricketpage.jpg);
+        background-image: url(../images/cricketpage.jpg)  center center / cover no-repeat;;
         margin: 0;
         padding: 20px;
-        min-height: 100vh;
+        height: 100vh;
+        width:100vw;
         display: flex;
         justify-content: center;
-        align-items: center;
-    }
+        align-items: center;}
+
     .container {
         width: 95%;
         max-width: 1000px;
-        background-image: url(../images/cricketform.jpg);
         padding: 25px;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        background: url(../images/cricketform.jpg) center center / cover no-repeat;
+        background-attachment: fixed;
+        height: 100%;
     }
     h2 {
         text-align: center;
@@ -468,7 +470,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     function validateTeamName(input) {
         const teamName = input.value.trim();
         if (teamName && existingTeamNames.includes(teamName)) {
-            alert("⚠️ Team name '" + teamName + "' already exists! Please choose a different name.");
+            alert("⚠ Team name '" + teamName + "' already exists! Please choose a different name.");
             input.value = ''; // Clear the input
             input.focus();
         }
@@ -506,7 +508,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         const teamName = document.getElementById("team_name").value.trim();
         if (existingTeamNames.includes(teamName)) {
-            alert("⚠️ Team name '" + teamName + "' already exists! Please choose a different name.");
+            alert("⚠ Team name '" + teamName + "' already exists! Please choose a different name.");
             event.preventDefault();
             return;
         }

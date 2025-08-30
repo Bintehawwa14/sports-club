@@ -52,15 +52,14 @@ $event_end   = null;
 $event_row   = null;
 
 if ($event_id > 0) {
-    $stmt = $con->prepare("SELECT id, event_name, start_date, end_date FROM events WHERE id = ?");
+    $stmt = $con->prepare("SELECT id, event_name, event_date FROM events WHERE id = ?");
     $stmt->bind_param("i", $event_id);
     $stmt->execute();
     $er = $stmt->get_result();
     if ($er && $er->num_rows) {
         $event_row = $er->fetch_assoc();
-        // Assign start and end dates directly
-        $event_start = !empty($event_row['start_date']) ? $event_row['start_date'] : null;
-        $event_end   = !empty($event_row['end_date']) ? $event_row['end_date'] : null;
+        $event_date = !empty($event_row['event_date']) ? $event_row['event_date'] : null;
+       
     }
     $stmt->close();
 }
@@ -173,12 +172,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $errors[] = "Invalid round selected.";
     }
 
-    // Validate event date range exists
-    if ($event_start && $event_end && !empty($match_date)) {
-        if (strtotime($match_date) < strtotime($event_start) || strtotime($match_date) > strtotime($event_end)) {
-            $errors[] = "Match date must be within event dates: {$event_start} — {$event_end}.";
-        }
+      // ✅ Validate match date equals event date
+if (!empty($event_date) && !empty($match_date)) {
+    if (date('Y-m-d', strtotime($match_date)) !== date('Y-m-d', strtotime($event_date))) {
+        $errors[] = "Match date must be the same as event date: {$event_date}.";
     }
+}
 
     // Clean team names: trim & remove empty
     $team_names = array_map('trim', $team_names);
@@ -332,7 +331,8 @@ foreach ($rounds as $r_no => $r_label) {
         <div class="form-note">Showing players registered for VolleyBall. Use these exact names when scheduling.</div>
       </div>
       <div>
-        <a href="volleyball_teams.php" class="btn btn-outline-secondary">Back to Registrations</a>
+     <a href="volleyball_teams.php" class="btn btn-primary">Back to Registrations</a>
+
       </div>
     </div>
     <div class="table-responsive">
@@ -361,7 +361,7 @@ foreach ($rounds as $r_no => $r_label) {
     <h5 class="section-title">Generate Matches (Single Elimination)</h5>
     <div class="small-muted mb-2">
       Event: <?= h($event_row['event_name'] ?? 'N/A') ?> |
-      Dates: <?= $event_start && $event_end ? h($event_start)." to ".h($event_end) : 'Event dates not set' ?>
+     Date: <?= $event_date ? h($event_date) : 'Event date not set' ?>
     </div>
 
     <form method="post" id="scheduleForm">
@@ -377,11 +377,11 @@ foreach ($rounds as $r_no => $r_label) {
           </select>
         </div>
 
-        <div class="col-md-3">
-          <label class="form-label">Match Date</label>
-          <input type="date" id="match_date" name="match_date" class="form-control" min="<?= h($event_start) ?>" max="<?= h($event_end) ?>" required>
-          <div class="form-note">Date must be within event dates.</div>
-        </div>
+       <div class="col-md-3">
+  <label class="form-label">Match Date</label>
+  <input type="date" id="match_date" name="match_date" class="form-control" min="<?= h($event_date) ?>">
+  <div class="form-note">Date must be on or after the event date.</div>
+</div>
 
         <div class="col-md-4">
           <label class="form-label">Number of Teams</label>

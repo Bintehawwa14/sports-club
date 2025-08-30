@@ -2,9 +2,10 @@
 include_once('../include/db_connect.php');
 
 // Fetch registered events
-$sql = "SELECT  event_name , status
-        FROM events";
+$sql = "SELECT  *  
+        FROM events WHERE status='active' OR is_finished='yes'";
 $result = mysqli_query($con, $sql);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

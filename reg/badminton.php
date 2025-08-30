@@ -56,7 +56,7 @@ if ($email) {
             exit();
         } else {
             echo "<script>
-                alert('Already registered for badminton');
+                alert('Your request for badminton is not approved yet!');
                 window.location.href='../user/join.php?event_id=$event_id&event_name=".urlencode($event_name)."';
             </script>";
             exit();
@@ -728,22 +728,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         showError(inputId, 'Only numbers are allowed');
         return false;
       }
-      
-      const numValue = parseInt(value);
-      if (inputId === 'height1' || inputId === 'height2') {
-        if (numValue < 100 || numValue > 250) {
-          showError(inputId, 'Height must be between 100cm and 250cm');
-          return false;
-        }
-      }
-      
-      if (inputId === 'weight1' || inputId === 'weight2') {
-        if (numValue < 30 || numValue > 150) {
-          showError(inputId, 'Weight must be between 30kg and 150kg');
-          return false;
-        }
-      }
+    
+     let numValue = parseInt(value);
+
+  // Height validation
+  if (inputId === 'height1' || inputId === 'height2') {
+    if (isNaN(numValue) || numValue < 100 || numValue > 250) {
+      showError(inputId, 'Height must be between 100cm and 250cm');
+      return false;
     }
+    return true;
+  }
+
+  // Weight validation
+  if (inputId === 'weight1' || inputId === 'weight2') {
+    if (isNaN(numValue) || numValue < 30 || numValue > 150) {
+      showError(inputId, 'Weight must be between 30kg and 150kg');
+      return false;
+    }
+    return true;
+  }
     
     if (type === 'team') {
       if (value.length < 2) {
