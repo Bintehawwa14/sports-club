@@ -15,28 +15,12 @@ if (isset($_GET['success']) && $_GET['success'] == 1) {
         });
     </script>";
 }
-
-// Fetch event_name from events table using event_id
-$event_id = mysqli_real_escape_string($con, $_GET['event_id'] ?? 0);
-$event_name = "";
-if ($event_id) {
-    $eventQuery = mysqli_query($con, "SELECT event_name FROM events WHERE id='$event_id'");
-    if ($eventRow = mysqli_fetch_assoc($eventQuery)) {
-        $event_name = $eventRow['event_name'];
-    } else {
-        echo "<script>alert('Invalid event ID. Please select a valid event.'); window.location.href='../user/get_event.php';</script>";
-        exit();
-    }
-} else {
-    echo "<script>alert('No event ID provided. Please select an event.'); window.location.href='../user/get_event.php';</script>";
-    exit();
-}
+$event_id = (int)$_GET['event_id'];
+$event_name = mysqli_real_escape_string($con, $_GET['event_name']);
 
 $userid = $_SESSION['userid'];
 $email = $_SESSION['email'];
-
-// Check if user already registered for cricket
-$check = "SELECT * FROM cricket_teams WHERE email = '$email' AND event_name = '$event_name'";
+$check = "SELECT * FROM cricket_teams WHERE email = '$email'";
 $exist = mysqli_query($con, $check);
 
 if ($exist && mysqli_num_rows($exist) > 0) {
@@ -45,11 +29,12 @@ if ($exist && mysqli_num_rows($exist) > 0) {
     if ($approved == "approved") {
         header("Location: ../user/dashboard.php");
         exit();
-    } else if ($approved == "pending") {
-        echo "<script>
+    }else if ($approved=="pending"){
+       echo "<script>
             alert('Your request for cricket is not approved yet!');
-            window.location.href='../user/join.php?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
-        exit();
+            window.location.href='../user/join.php';
+          </script>";
+    exit();
     }
 }
 
@@ -59,16 +44,16 @@ $userEmail = "";
 $isLoggedIn = false;
 
 if (isset($_SESSION['userid'])) {
-    $userId = $_SESSION['userid'];
-    $userQuery = "SELECT fname, lname, email FROM users WHERE id = '$userId'";
-    $userResult = mysqli_query($con, $userQuery);
+    $userId = $_SESSION['userid'];  // match the session key
+ $userQuery = "SELECT fname, lname, email FROM users WHERE id = '$userId'";
+$userResult = mysqli_query($con, $userQuery);
 
-    if ($userResult && mysqli_num_rows($userResult) > 0) {
-        $userData = mysqli_fetch_assoc($userResult);
-        $userFullName = $userData['fname'] . ' ' . $userData['lname'];
-        $userEmail = $userData['email'];
-        $isLoggedIn = true;
-    }
+if ($userResult && mysqli_num_rows($userResult) > 0) {
+    $userData = mysqli_fetch_assoc($userResult);
+    $userFullName = $userData['fname'] . ' ' . $userData['lname'];  // combine first and last name
+    $userEmail = $userData['email'];
+    $isLoggedIn = true;
+}
 }
 
 // Redirect if not logged in
@@ -78,80 +63,92 @@ if (!$isLoggedIn) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Team Information
-    $fullName = mysqli_real_escape_string($con, $_POST['fullName']);
-    $email = mysqli_real_escape_string($con, $_POST['email']);
-    $teamName = mysqli_real_escape_string($con, $_POST['team_name']);
-    $captainName = mysqli_real_escape_string($con, $_POST['captain_name']);
-    $viceCaptainName = mysqli_real_escape_string($con, $_POST['vice_captain_name']);
 
-    // Check if team name already exists for this event
-    $teamCheck = mysqli_query($con, "SELECT * FROM cricket_teams WHERE team_name = '$teamName' AND event_name = '$event_name'");
-    if (mysqli_num_rows($teamCheck) > 0) {
-        echo "<script>alert('⚠ Team name already exists for this event! Please choose a different name.'); window.location.href='" . $_SERVER['PHP_SELF'] . "?event_id=$event_id&event_name=".urlencode($event_name)."';</script>";
-        exit();
-    }
+    // Team Information - Updated to match HTML form fields
+    $fullName = $_POST['fullName'];
+    $email = $_POST['email'];
+    $teamName = $_POST['team_name'];
+ $captainName = $_POST['captain_name'];
+$viceCaptainName = $_POST['vice_captain_name'];
 
-    // Insert into cricket_teams
-    $stmt = $con->prepare("INSERT INTO cricket_teams (event_name, full_name, email, team_name, captain_name, vice_captain_name) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", $event_name, $fullName, $email, $teamName, $captainName, $viceCaptainName);
-    $stmt->execute();
-
-    // Player Information
+// Insert into cricket_teams
+$stmt = $con->prepare("INSERT INTO cricket_teams 
+    (full_name, email, team_name, captain_name, vice_captain_name, event_name) 
+    VALUES (?, ?, ?, ?, ?, ?)");
+                    
+$stmt->bind_param("ssssss", $fullName, $email, $teamName, $captainName, $viceCaptainName, $event_name);
+$stmt->execute();
+    // Player Information - Updated to match HTML form fields
     if (isset($_POST['player-name'])) {
         $playerNames = $_POST['player-name'];
         $ages = $_POST['player-age'];
         $roles = $_POST['player-role'];
         $battingStyles = $_POST['player-batting-style'];
+         $teamName = $_POST['team_name'];
         $bowlingStyles = $_POST['player-bowling-style'];
         $heights = $_POST['player-height'];
         $weights = $_POST['player-weight'];
         $disabilities = $_POST['player-disability'];
 
         for ($i = 0; $i < count($playerNames); $i++) {
-            $stmt2 = $con->prepare("INSERT INTO cricket_players (event_name, player_name, age, team_name, role, batting_style, bowling_style, height, weight, disability) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt2->bind_param("sissssiiis", $event_name, $playerNames[$i], $ages[$i], $teamName, $roles[$i], $battingStyles[$i], $bowlingStyles[$i], $heights[$i], $weights[$i], $disabilities[$i]);
+        
+    $stmt2 = $con->prepare("INSERT INTO cricket_players 
+        (player_name, age, team_name, role, batting_style, bowling_style, height, weight, disability, event_name) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+$stmt2->bind_param(
+    "sissssiiis",   // 10 fields
+    $playerNames[$i],   // s
+    $ages[$i],          // i
+    $teamName,          // s
+    $roles[$i],         // i
+    $battingStyles[$i], // s
+    $bowlingStyles[$i], // s
+    $heights[$i],       // i
+    $weights[$i],       // i
+    $disabilities,      // s
+    $event_name         // s
+);
+$stmt2->execute();
+
             $stmt2->execute();
         }
     }
 
     // Redirect to success page
-    header("Location: " . $_SERVER['PHP_SELF'] . "?success=1&event_id=$event_id&event_name=".urlencode($event_name));
+    header("Location: " . $_SERVER['PHP_SELF'] . "?success=1");
     exit();
 }
-?>
 
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Cricket Team Registration</title>
+<title>Cricket Registration Form</title>
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-image: url(../images/cricketpage.jpg)  center center / cover no-repeat;;
+        background-image: url(../images/cricketpage.jpg);
         margin: 0;
         padding: 20px;
-        height: 100vh;
-        width:100vw;
+        min-height: 100vh;
         display: flex;
         justify-content: center;
-        align-items: center;}
-
+        align-items: center;
+    }
     .container {
         width: 95%;
         max-width: 1000px;
+        background-image: url(../images/cricketform.jpg);
         padding: 25px;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        background: url(../images/cricketform.jpg) center center / cover no-repeat;
-        background-attachment: fixed;
-        height: 100%;
     }
     h2 {
         text-align: center;
         margin-bottom: 25px;
-        color: #1a2a6c;
+        color: #10a075ff;
         font-size: 28px;
         padding-bottom: 10px;
     }
@@ -309,6 +306,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         content: " *";
         color: #d23d2d;
     }
+    .error {
+        color: #d23d2d;
+        font-size: 12px;
+        margin-top: 5px;
+        display: block;
+    }
+    .valid {
+        border-color: #28a745 !important;
+    }
+    .invalid {
+        border-color: #d23d2d !important;
+    }
     @media (max-width: 768px) {
         .grid-2, .player-grid {
             grid-template-columns: 1fr;
@@ -323,16 +332,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <div class="container">
     <h2>Cricket Team Registration</h2>
     <form method="POST" id="cricketForm">
-        <input type="hidden" name="event_id" value="<?php echo $event_id; ?>">
-        <input type="hidden" name="event_name" value="<?php echo htmlspecialchars($event_name); ?>">
-
+        
         <!-- Team Information -->
         <div class="form-section">
             <h3>Team Information</h3>
             <div class="grid-2">
                 <div>
                     <label for="fullName" class="required">Full Name:</label>
-                    <input type="text" id="fullName" name="fullName" value="<?php echo htmlspecialchars($userFullName); ?>" required readonly>
+                    <input type="text" id="fullName" name="fullName"  value="<?php echo htmlspecialchars($userFullName); ?>" required readonly>
                 </div>
                 <div>
                     <label for="email" class="required">Email Address:</label>
@@ -340,15 +347,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 <div>
                     <label for="team_name" class="required">Team Name:</label>
-                    <input type="text" id="team_name" name="team_name" required oninput="validateTeamName(this)">
+                    <input type="text" id="team_name" name="team_name" maxlength="20" required>
+                    <span class="error" id="team_name_error"></span>
                 </div>
                 <div>
                     <label for="captain_name" class="required">Captain Name:</label>
-                    <input type="text" id="captain_name" name="captain_name" required>
+                    <input type="text" id="captain_name" name="captain_name" maxlength="20" required>
+                    <span class="error" id="captain_name_error"></span>
                 </div>
                 <div>
-                    <label for="vice_captain_name" class="required">Vice-Captain Name:</label>
-                    <input type="text" id="vice_captain_name" name="vice_captain_name" required>
+                   <label for="viceCaptain" class="required">Vice-Captain Name:</label>
+                   <input type="text" id="viceCaptain" name="vice_captain_name" maxlength="20" required>
+                   <span class="error" id="vice_captain_name_error"></span>
                 </div>
             </div>
         </div>
@@ -374,14 +384,157 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <button type="submit" class="submit-btn">Submit Registration</button>
     </form>
     
-    <a href="../user/join.php?event_id=<?php echo $event_id; ?>&event_name=<?php echo urlencode($event_name); ?>" class="back-btn">⬅ Back</a>
+    <a href="../user/join.php" class="back-btn">⬅ Back to Dashboard</a>
 </div>
 
 <script>
-    // Example list of existing team names (replace with actual data from database if needed)
-    const existingTeamNames = ["Team A", "Team B", "Team C"]; // This should be dynamically populated from PHP
-
     let playerCount = 0;
+    let playerFields = [];
+
+    // Validation functions
+    function validateName(input, errorElementId) {
+        const value = input.value.trim();
+        const errorElement = document.getElementById(errorElementId);
+        
+        if (value === '') {
+            errorElement.textContent = 'This field is required';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        if (/\d/.test(value)) {
+            errorElement.textContent = 'Name cannot contain numbers';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        if (value.length > 15) {
+            errorElement.textContent = 'Name cannot exceed 15 characters';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        errorElement.textContent = '';
+        input.classList.remove('invalid');
+        input.classList.add('valid');
+        return true;
+    }
+    
+    function validatePlayerName(input, index) {
+        const value = input.value.trim();
+        const errorElement = document.getElementById(`player_name_error_${index}`);
+        
+        if (value === '') {
+            errorElement.textContent = 'Player name is required';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        if (/\d/.test(value)) {
+            errorElement.textContent = 'Player name cannot contain numbers';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        if (value.length > 20) {
+            errorElement.textContent = 'Player name cannot exceed 20 characters';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        errorElement.textContent = '';
+        input.classList.remove('invalid');
+        input.classList.add('valid');
+        return true;
+    }
+    
+    function validateAge(input, index) {
+        const value = parseInt(input.value);
+        const errorElement = document.getElementById(`player_age_error_${index}`);
+        
+        if (isNaN(value)) {
+            errorElement.textContent = 'Age is required';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        if (value < 16 || value > 22) {
+            errorElement.textContent = 'Age must be between 16 and 22';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        errorElement.textContent = '';
+        input.classList.remove('invalid');
+        input.classList.add('valid');
+        return true;
+    }
+    
+    function validateSelect(input, index, fieldName) {
+        const value = input.value;
+        const errorElement = document.getElementById(`player_${fieldName}_error_${index}`);
+        
+        if (value === '') {
+            errorElement.textContent = `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} is required`;
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        errorElement.textContent = '';
+        input.classList.remove('invalid');
+        input.classList.add('valid');
+        return true;
+    }
+    
+    function validateNumber(input, index, fieldName, min, max) {
+        const value = parseInt(input.value);
+        const errorElement = document.getElementById(`player_${fieldName}_error_${index}`);
+        
+        if (isNaN(value)) {
+            errorElement.textContent = `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} is required`;
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        if (value < min || value > max) {
+            errorElement.textContent = `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} must be between ${min} and ${max}`;
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        errorElement.textContent = '';
+        input.classList.remove('invalid');
+        input.classList.add('valid');
+        return true;
+    }
+    
+    function validateDisability(input, index) {
+        const value = input.value.trim();
+        const errorElement = document.getElementById(`player_disability_error_${index}`);
+        
+        if (value === '') {
+            errorElement.textContent = 'This field is required';
+            input.classList.add('invalid');
+            input.classList.remove('valid');
+            return false;
+        }
+        
+        errorElement.textContent = '';
+        input.classList.remove('invalid');
+        input.classList.add('valid');
+        return true;
+    }
 
     function addPlayerField() {
         if (playerCount >= 15) {
@@ -396,48 +549,62 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <h4>Player ${playerCount + 1}</h4>
             <div class="player-grid">
                 <div>
-                    <input type="text" name="player-name[]" placeholder="Player Name*" required oninput="validatePlayerName(this)">
+                    <input type="text" name="player-name[]" placeholder="Player Name*" maxlength="20" required
+                           oninput="validatePlayerName(this, ${playerCount})">
+                    <span class="error" id="player_name_error_${playerCount}"></span>
                 </div>
                 <div>
-                    <input type="number" name="player-age[]" placeholder="Age*" min="16" max="22" required>
+                    <input type="number" name="player-age[]" placeholder="Age*" min="16" max="22" required
+                           oninput="validateAge(this, ${playerCount})">
+                    <span class="error" id="player_age_error_${playerCount}"></span>
                 </div>
                 <div>
-                    <select name="player-role[]" required>
+                    <select name="player-role[]" required onchange="validateSelect(this, ${playerCount}, 'role')">
                         <option value="">Select Role*</option>
                         <option value="Batsman">Batsman</option>
                         <option value="Bowler">Bowler</option>
                         <option value="All-rounder">All-rounder</option>
                         <option value="Wicketkeeper">Wicketkeeper</option>
                     </select>
+                    <span class="error" id="player_role_error_${playerCount}"></span>
                 </div>
                 <div>
-                    <select name="player-batting-style[]" required>
+                    <select name="player-batting-style[]" required onchange="validateSelect(this, ${playerCount}, 'batting_style')">
                         <option value="">Batting Style*</option>
                         <option value="Right-handed">Right-handed</option>
                         <option value="Left-handed">Left-handed</option>
                     </select>
+                    <span class="error" id="player_batting_style_error_${playerCount}"></span>
                 </div>
                 <div>
-                    <select name="player-bowling-style[]" required>
+                    <select name="player-bowling-style[]" required onchange="validateSelect(this, ${playerCount}, 'bowling_style')">
                         <option value="">Bowling Style*</option>
                         <option value="Fast">Fast</option>
                         <option value="Medium">Medium</option>
                         <option value="Spin">Spin</option>
                         <option value="None">Does not bowl</option>
                     </select>
+                    <span class="error" id="player_bowling_style_error_${playerCount}"></span>
                 </div>
                 <div>
-                    <input type="number" name="player-height[]" placeholder="Height (cm)*" min="150" max="220" required>
+                    <input type="number" name="player-height[]" placeholder="Height (cm)*" min="150" max="220" required
+                           oninput="validateNumber(this, ${playerCount}, 'height', 150, 220)">
+                    <span class="error" id="player_height_error_${playerCount}"></span>
                 </div>
                 <div>
-                    <input type="number" name="player-weight[]" placeholder="Weight (kg)*" min="40" max="120" required>
+                    <input type="number" name="player-weight[]" placeholder="Weight (kg)*" min="40" max="120" required
+                           oninput="validateNumber(this, ${playerCount}, 'weight', 40, 120)">
+                    <span class="error" id="player_weight_error_${playerCount}"></span>
                 </div>
                 <div>
-                    <input type="text" name="player-disability[]" placeholder="Disability(if any,specify)*" required>
+                    <input type="text" name="player-disability[]" placeholder="Disability(if any,specify)*" required
+                           oninput="validateDisability(this, ${playerCount})">
+                    <span class="error" id="player_disability_error_${playerCount}"></span>
                 </div>
             </div>
         `;
         playersContainer.appendChild(playerDiv);
+        playerFields.push(playerDiv);
         playerCount++;
     }
 
@@ -450,75 +617,82 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         const playersContainer = document.getElementById("playersContainer");
         if (playersContainer.lastElementChild) {
             playersContainer.removeChild(playersContainer.lastElementChild);
+            playerFields.pop();
             playerCount--;
         }
     }
 
-    function validatePlayerName(input) {
-        let value = input.value.trim();
-        value = value.replace(/[^a-zA-Z\s]/g, ''); // Allow only alphabets and spaces
-        if (value.length < 3) {
-            input.setCustomValidity("Name must be at least 3 characters long.");
-        } else if (value.length > 15) {
-            input.setCustomValidity("Name must not exceed 15 characters.");
-        } else {
-            input.setCustomValidity(""); // Clear validation message if valid
-        }
-        input.value = value;
-    }
-
-    function validateTeamName(input) {
-        const teamName = input.value.trim();
-        if (teamName && existingTeamNames.includes(teamName)) {
-            alert("⚠ Team name '" + teamName + "' already exists! Please choose a different name.");
-            input.value = ''; // Clear the input
-            input.focus();
-        }
-    }
-
     // Form Validation
-    document.getElementById("cricketForm").addEventListener("submit", function(event) {
+    document.getElementById("cricketForm").addEventListener("submit", function(event){
+        // Validate team information
+        const isTeamNameValid = validateName(document.getElementById('team_name'), 'team_name_error');
+        const isCaptainNameValid = validateName(document.getElementById('captain_name'), 'captain_name_error');
+        const isViceCaptainNameValid = validateName(document.getElementById('viceCaptain'), 'vice_captain_name_error');
+        
+        // Validate all player fields
+        let allPlayersValid = true;
+        
+        for (let i = 0; i < playerCount; i++) {
+            const nameInput = document.querySelector(`input[name="player-name[]"]:nth-child(${i+1})`);
+            const ageInput = document.querySelector(`input[name="player-age[]"]:nth-child(${i+1})`);
+            const roleSelect = document.querySelector(`select[name="player-role[]"]:nth-child(${i+1})`);
+            const battingSelect = document.querySelector(`select[name="player-batting-style[]"]:nth-child(${i+1})`);
+            const bowlingSelect = document.querySelector(`select[name="player-bowling-style[]"]:nth-child(${i+1})`);
+            const heightInput = document.querySelector(`input[name="player-height[]"]:nth-child(${i+1})`);
+            const weightInput = document.querySelector(`input[name="player-weight[]"]:nth-child(${i+1})`);
+            const disabilityInput = document.querySelector(`input[name="player-disability[]"]:nth-child(${i+1})`);
+            
+            const isNameValid = validatePlayerName(nameInput, i);
+            const isAgeValid = validateAge(ageInput, i);
+            const isRoleValid = validateSelect(roleSelect, i, 'role');
+            const isBattingValid = validateSelect(battingSelect, i, 'batting_style');
+            const isBowlingValid = validateSelect(bowlingSelect, i, 'bowling_style');
+            const isHeightValid = validateNumber(heightInput, i, 'height', 150, 220);
+            const isWeightValid = validateNumber(weightInput, i, 'weight', 40, 120);
+            const isDisabilityValid = validateDisability(disabilityInput, i);
+            
+            if (!(isNameValid && isAgeValid && isRoleValid && isBattingValid && 
+                  isBowlingValid && isHeightValid && isWeightValid && isDisabilityValid)) {
+                allPlayersValid = false;
+            }
+        }
+        
+        // Check at least 11 players
         if (playerCount < 11) {
-            alert("Minimum 11 players required! You have only added " + playerCount + " players.");
+            alert("Minimum 11 players required!");
             event.preventDefault();
             return;
         }
-
-        const nameInputs = document.querySelectorAll('input[name="player-name[]"]');
-        for (let nameInput of nameInputs) {
-            const nameValue = nameInput.value.trim();
-            if (!/^[a-zA-Z\s]{3,15}$/.test(nameValue)) {
-                alert("Player name must contain only alphabets and spaces, with 3-15 characters.");
-                nameInput.focus();
-                event.preventDefault();
-                return;
-            }
-        }
-
-        const ageInputs = document.querySelectorAll('input[name="player-age[]"]');
-        for (let ageInput of ageInputs) {
-            const age = parseInt(ageInput.value);
-            if (isNaN(age) || age < 16 || age > 22) {
-                alert("Each player's age must be between 16 and 22 years.");
-                ageInput.focus();
-                event.preventDefault();
-                return;
-            }
-        }
-
-        const teamName = document.getElementById("team_name").value.trim();
-        if (existingTeamNames.includes(teamName)) {
-            alert("⚠ Team name '" + teamName + "' already exists! Please choose a different name.");
+        
+        // Prevent form submission if any validation fails
+        if (!(isTeamNameValid && isCaptainNameValid && isViceCaptainNameValid && allPlayersValid)) {
             event.preventDefault();
+            alert("Please fix all validation errors before submitting.");
             return;
         }
-
+        
         alert("Team Registration Successful! 🎉");
     });
 
-    // Add one player field on page load
+    // Add event listeners for team name validation
+    document.getElementById('team_name').addEventListener('input', function() {
+        validateName(this, 'team_name_error');
+    });
+    
+    document.getElementById('captain_name').addEventListener('input', function() {
+        validateName(this, 'captain_name_error');
+    });
+    
+    document.getElementById('viceCaptain').addEventListener('input', function() {
+        validateName(this, 'vice_captain_name_error');
+    });
+
+    // Add initial player fields on page load
     window.onload = function() {
-        addPlayerField();
+        // Add 11 player fields by default
+        for (let i = 0; i < 1; i++) {
+            addPlayerField();
+        }
     };
 </script>
 </body>

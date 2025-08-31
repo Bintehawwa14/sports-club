@@ -56,7 +56,7 @@ if ($email) {
             exit();
         } else {
             echo "<script>
-                alert('Already registered for table tennis');
+                alert('Your request for Table tennis is not approved yet!');
                 window.location.href='../user/join.php?event_id=$event_id&event_name=".urlencode($event_name)."';
             </script>";
             exit();

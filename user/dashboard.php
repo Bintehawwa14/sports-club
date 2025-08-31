@@ -98,7 +98,7 @@ $tabletennisPlayers = mysqli_query($con, "SELECT * FROM tabletennis_players WHER
                <?php
                if ($cricketTeams) {
                    if (mysqli_num_rows($cricketTeams) == 0) {
-                       echo "<p class='text-white'>No approved cricket teams found for email: " . htmlspecialchars($email) . "</p>";
+                       
                    }
                    while($team = mysqli_fetch_assoc($cricketTeams)) {
                        ?>

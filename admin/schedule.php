@@ -18,9 +18,30 @@ $result = mysqli_query($con, $sql);
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js" crossorigin="anonymous"></script>
   <style>
     body {
-      background: linear-gradient(to right, #E0F7FA, #BBDEFB, #E3F2FD);
-      min-height: 100vh;
-    }
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('../images/volleyballform.jpg'); /* Updated path */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+       
     .event-card {
       border-radius: 18px;
       background: #ffffff;
@@ -51,6 +72,21 @@ $result = mysqli_query($con, $sql);
     .btn-detail:hover {
       background-color: #0D47A1;
     }
+    h1{
+      
+        font-size: 34px;
+        color: #ffffff; 
+        font-weight: 700;
+        margin-bottom: 30px;
+        text-align: right  center;        
+        background-color: rgba(0, 0, 0, 0.4); 
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 10px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        
+    
+    }
   </style>
 </head>
 <body class="sb-nav-fixed">
@@ -59,7 +95,7 @@ $result = mysqli_query($con, $sql);
     <?php include_once('includes/sidebar.php'); ?>
     <div id="layoutSidenav_content">
       <main class="container-fluid px-4 mt-4">
-        <h1 class="text-center text-dark mb-5">Schedule Matches</h1>
+        <h1>Schedule Matches</h1>
         <div class="row g-4">
           <?php while($row = mysqli_fetch_assoc($result)) { ?>
             <div class="col-md-4">

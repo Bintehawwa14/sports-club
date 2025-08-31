@@ -1,124 +1,319 @@
-    <?php
-    include_once('../../include/db_connect.php');
+```php
+<?php
+session_start();
+require_once '../../include/db_connect.php';
 
-    if (!isset($_GET['team_name'])) {
-        die("Team not selected.");
-    }
+// Enable error logging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-    $teamName = mysqli_real_escape_string($con, $_GET['team_name']);
+if (!isset($_GET['team_name'])) {
+    error_log("Team name not provided in URL");
+    die("Team not selected.");
+}
 
-    // Fetch players of the team
-    $sql = "SELECT player_name, age, role, batting_style, bowling_style, height, weight, disability, is_approved 
-            FROM cricket_players 
-            WHERE team_name = '$teamName'";
-    $result = mysqli_query($con, $sql);
+$teamName = $_GET['team_name'];
 
-    // Check overall team approval status
-    $checkPlayers = "SELECT COUNT(*) as not_approved_count 
-                    FROM cricket_players 
-                    WHERE team_name = '$teamName' AND is_approved != 'approved'";
-    $checkResult = mysqli_query($con, $checkPlayers);
-    $checkRow = mysqli_fetch_assoc($checkResult);
-    $teamStatus = ($checkRow['not_approved_count'] == 0) ? 'approved' : 'pending';
-    ?>
+// Fetch players using prepared statement
+$sql = "SELECT player_name, age, role, batting_style, bowling_style, height, weight, disability, is_approved 
+        FROM cricket_players 
+        WHERE team_name = ?";
+$stmt = mysqli_prepare($con, $sql);
+mysqli_stmt_bind_param($stmt, "s", $teamName);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Team Details - <?php echo htmlspecialchars($teamName); ?></title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    </head>
-    <body class="container mt-4">
+if (!$result) {
+    error_log("Error fetching players: " . mysqli_error($con));
+    die("Error fetching players. Please check logs.");
+}
 
-        <h2>
-            Team: <?php echo htmlspecialchars($teamName); ?>
-            <span id="team-status" class="badge <?php echo ($teamStatus == 'approved') ? 'bg-success' : 'bg-warning'; ?>">
-                <?php echo strtoupper($teamStatus); ?>
-            </span>
-        </h2>
-        <a href="all_teams.php" class="btn btn-secondary mb-3">⬅ Back</a>
-        
-        <table class="table table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Player Name</th>
-                    <th>Age</th>
-                    <th>Role</th>
-                    <th>Batting Style</th>
-                    <th>Bowling Style</th>
-                    <th>Height</th>
-                    <th>Weight</th>
-                    <th>Disability</th>
-                    <th>Approval Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php if (mysqli_num_rows($result) > 0) { 
-                while ($row = mysqli_fetch_assoc($result)) { ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row['player_name']); ?></td>
-                        <td><?php echo htmlspecialchars($row['age']); ?></td>
-                        <td><?php echo htmlspecialchars($row['role']); ?></td>
-                        <td><?php echo htmlspecialchars($row['batting_style']); ?></td>
-                        <td><?php echo htmlspecialchars($row['bowling_style']); ?></td>
-                        <td><?php echo htmlspecialchars($row['height']); ?></td>
-                        <td><?php echo htmlspecialchars($row['weight']); ?></td>
-                        <td><?php echo htmlspecialchars($row['disability']); ?></td>
-                        <td>
-                            <select onchange="updatePlayerStatus('<?php echo htmlspecialchars($row['player_name']); ?>', '<?php echo htmlspecialchars($teamName); ?>', this.value)">
-                                <option value="pending" <?php if($row['is_approved']=='pending') echo 'selected'; ?>>Pending</option>
-                                <option value="approved" <?php if($row['is_approved']=='approved') echo 'selected'; ?>>Approved</option>
-                            </select>
-                        </td>
-                    </tr>
-                <?php } 
-            } else { ?>
-                <tr><td colspan="9" class="text-center">No players found for this team</td></tr>
-            <?php } ?>
-            </tbody>
-        </table>
+// Check team approval status
+$checkSql = "SELECT COUNT(*) as not_approved_count 
+             FROM cricket_players 
+             WHERE team_name = ? AND is_approved != 'approved'";
+$checkStmt = mysqli_prepare($con, $checkSql);
+mysqli_stmt_bind_param($checkStmt, "s", $teamName);
+mysqli_stmt_execute($checkStmt);
+$checkResult = mysqli_stmt_get_result($checkStmt);
+$checkRow = mysqli_fetch_assoc($checkResult);
+$teamStatus = ($checkRow['not_approved_count'] == 0) ? 'approved' : 'pending';
 
-        <script>
-        function updatePlayerStatus(playerName, teamName, status) {
-            let formData = new FormData();
-            formData.append('player_name', playerName);
-            formData.append('team_name', teamName);
-            formData.append('is_approved', status);
+mysqli_stmt_close($stmt);
+mysqli_stmt_close($checkStmt);
+?>
 
-            fetch('update_status.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    let statusElement = document.getElementById('team-status');
-                    statusElement.textContent = data.team_status.toUpperCase();
-                    statusElement.className = 'badge ' + (data.team_status === 'approved' ? 'bg-success' : 'bg-warning');
-                    location.reload();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(err => alert('Request failed: ' + err));
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="Cricket Team Details Page" />
+    <meta name="author" content="" />
+    <title>Cricket Team Details - <?php echo htmlspecialchars($teamName); ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('../../images/volleyballform.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #333;
+            min-height: 100vh;
         }
-        </script>
-        <script>
-    function updateStatus(playerId, status, teamId) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", "update_status.php", true);
-        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                location.reload(); // Refresh page to see updated team status
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+
+        .users-container {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            margin: 20px auto;
+            width: 95%;
+            max-width: 1200px;
+        }
+
+        .users-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .users-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a3c6d;
+            margin: 0;
+            letter-spacing: 0.3px;
+        }
+
+        .users-header .badge {
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 12px;
+        }
+
+        .badge-approved {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .badge-pending {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .table-responsive {
+            margin-top: 15px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f0f4f8;
+            color: #1a3c6d;
+            font-weight: 600;
+        }
+
+        td {
+            color: #374151;
+            background-color: #ffffff;
+        }
+
+        .alert {
+            padding: 10px;
+            background-color: #fef2f2;
+            color: #b91c1c;
+            margin: 15px auto;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 13px;
+            max-width: 800px;
+        }
+
+        .back-button {
+            color: #1a3c6d;
+            text-decoration: none;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+
+        .back-button:hover {
+            color: #b91c1c;
+        }
+
+        .form-select {
+            font-size: 14px;
+            padding: 6px;
+            border-radius: 4px;
+            width: auto;
+        }
+
+        @media (max-width: 768px) {
+            .users-container {
+                width: 95%;
+                padding: 15px;
+                margin: 15px auto;
             }
-        };
-        xhr.send("player_id=" + playerId + "&status=" + status + "&team_id=" + teamId);
-        location.reload();
-    }
+
+            .users-header h1 {
+                font-size: 20px;
+            }
+
+            th, td {
+                display: block;
+                width: 100%;
+                text-align: left;
+                padding: 8px;
+            }
+
+            th {
+                background-color: #e6eef8;
+                border-bottom: none;
+            }
+
+            td {
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .form-select {
+                width: 100%;
+                font-size: 12px;
+            }
+
+            .users-header .badge {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .users-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .back-button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-4">
+        <!-- Back Button -->
+        <a href="all_teams.php" class="back-button mb-4 d-inline-block">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Teams
+        </a>
+
+        <!-- Header -->
+        <div class="users-container">
+            <div class="users-header">
+                <h1>
+                    Cricket Team: <?php echo htmlspecialchars($teamName); ?>
+                    <span id="team-status" class="badge <?php echo ($teamStatus == 'approved') ? 'badge-approved' : 'badge-pending'; ?>">
+                        <?php echo strtoupper($teamStatus); ?>
+                    </span>
+                </h1>
+            </div>
+
+            <!-- Team Details Table -->
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player Name</th>
+                            <th>Age</th>
+                            <th>Role</th>
+                            <th>Batting Style</th>
+                            <th>Bowling Style</th>
+                            <th>Height</th>
+                            <th>Weight</th>
+                            <th>Disability</th>
+                            <th>Approval Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (mysqli_num_rows($result) > 0) { 
+                            while ($row = mysqli_fetch_assoc($result)) { ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($row['player_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['age']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['role']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['batting_style']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['bowling_style']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['height']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['weight']); ?></td>
+                                    <td><?php echo htmlspecialchars($row['disability']); ?></td>
+                                    <td>
+                                        <form method="post" action="update_status.php">
+                                            <input type="hidden" name="player_name" value="<?php echo htmlspecialchars($row['player_name']); ?>">
+                                            <input type="hidden" name="team_name" value="<?php echo htmlspecialchars($teamName); ?>">
+                                            <input type="hidden" name="game" value="cricket">
+                                            <input type="hidden" name="redirect_back" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI']); ?>">
+                                            <select name="is_approved" class="form-select" onchange="this.form.submit()">
+                                                <option value="pending" <?php if ($row['is_approved'] == 'pending') echo 'selected'; ?>>Pending</option>
+                                                <option value="approved" <?php if ($row['is_approved'] == 'approved') echo 'selected'; ?>>Approved</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php } 
+                        } else { ?>
+                            <tr>
+                                <td colspan="9" class="text-center alert">⚠ No players found for this team</td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // JavaScript for form submission (replaces fetch and XMLHttpRequest)
+        document.querySelectorAll('.form-select').forEach(select => {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
     </script>
-
-
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    </body>
-    </html>
+</body>
+</html>
+```

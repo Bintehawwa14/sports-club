@@ -57,6 +57,10 @@ try {
     $response['error'] = 'Server error occurred';
 }
 
-echo json_encode($response);
+if ($response['success']) {
+    header("Location: all_teams.php?status=" . $response['team_status']);
+} else {
+    header("Location: all_teams.php?error=" . urlencode($response['error']));
+}
 exit();
 ?>

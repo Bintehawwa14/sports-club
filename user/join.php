@@ -1,4 +1,4 @@
-```php
+
 <?php
 session_start();
 include_once('../include/db_connect.php');
@@ -129,4 +129,3 @@ if ($row = mysqli_fetch_assoc($result)) {
 </div>
 </body>
 </html>
-```

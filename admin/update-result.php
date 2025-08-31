@@ -29,7 +29,7 @@ if (!$result) {
           <?php include ('includes/sidebar.php');?>
             <div id="layoutSidenav_content">
                 <main>
-                <h1 class="mt-4">UPDATE RESULT FOR FOLLOWING SPORTS</h1>
+                <h1 >UPDATE RESULT FOR FOLLOWING SPORTS</h1>
                     <div class="row-dashboard">
 
 
@@ -95,23 +95,51 @@ if (!$result) {
         <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
         <script src="../js/datatables-simple-demo.js"></script>
         <style>
-    body {
-        background-color: #f0f2f5;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+  
 
     .container-fluid {
         padding: 40px 20px;
     }
+ h1{
+      
+            font-size: 34px;
+            color: #ffffff; 
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: right  center;        
+            background-color: rgba(0, 0, 0, 0.4); 
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            
+        
+        }
+         body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('../images/volleyballform.jpg'); /* Updated path */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-    h1 {
-        font-size: 34px;
-        color: #2c3e50;
-        font-weight: 600;
-        margin-bottom: 30px;
-        text-align: center;
-    }
-
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+       
   
     .row-dashboard {
         display: flex;

@@ -1,41 +1,69 @@
 
 <?php
 session_start();
-include_once('../include/db_connect.php');
+require_once '../include/db_connect.php';
+
+// Enable error logging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 if (!isset($_SESSION['user'])) {
+    error_log("Session user not set. Redirecting to index.php");
     header("Location: index.php");
     exit();
 }
 
-// for deleting user and their registrations
+// Handle user deletion with prepared statements
 if (isset($_GET['id'])) {
     $user_id = intval($_GET['id']);
 
-    // Pehle role check karein
-    $checkRole = mysqli_query($con, "SELECT role, email FROM users WHERE id='$user_id'");
-    $row = mysqli_fetch_assoc($checkRole);
+    // Check user role
+    $checkStmt = mysqli_prepare($con, "SELECT role, email FROM users WHERE id = ?");
+    mysqli_stmt_bind_param($checkStmt, "i", $user_id);
+    mysqli_stmt_execute($checkStmt);
+    $checkResult = mysqli_stmt_get_result($checkStmt);
+    $row = mysqli_fetch_assoc($checkResult);
 
     if ($row && strtolower($row['role']) === 'admin') {
-        echo "<script>alert('Admin cannot be deleted.');</script>";
+        echo "<script>alert('Admin cannot be deleted.'); window.location.href='manage-users.php';</script>";
     } else {
-        // Delete all registrations first
+        // Delete registrations
         $email = $row['email'];
-        mysqli_query($con, "DELETE FROM tabletennis_players WHERE email='$email'");
-        mysqli_query($con, "DELETE FROM badminton_players WHERE email='$email'");
-        // aapke baaki registration tables bhi yahan add karein
+        $deleteStmt1 = mysqli_prepare($con, "DELETE FROM tabletennis_players WHERE email = ?");
+        mysqli_stmt_bind_param($deleteStmt1, "s", $email);
+        mysqli_stmt_execute($deleteStmt1);
 
-        // Ab user delete
-        $sql = "DELETE FROM users WHERE id = $user_id";
-        if (mysqli_query($con, $sql)) {
-            echo "<script>alert('Successfully deleted!'); 
-                  window.location.href='manage-users.php';</script>";
+        $deleteStmt2 = mysqli_prepare($con, "DELETE FROM badminton_players WHERE email = ?");
+        mysqli_stmt_bind_param($deleteStmt2, "s", $email);
+        mysqli_stmt_execute($deleteStmt2);
+
+        // Delete user
+        $deleteStmt3 = mysqli_prepare($con, "DELETE FROM users WHERE id = ?");
+        mysqli_stmt_bind_param($deleteStmt3, "i", $user_id);
+        if (mysqli_stmt_execute($deleteStmt3)) {
+            echo "<script>alert('Successfully deleted!'); window.location.href='manage-users.php';</script>";
         } else {
-            echo "<script>alert('Error: " . mysqli_error($con) . "');</script>";
+            error_log("Error deleting user: " . mysqli_error($con));
+            echo "<script>alert('Error: " . mysqli_error($con) . "'); window.location.href='manage-users.php';</script>";
         }
+        mysqli_stmt_close($deleteStmt1);
+        mysqli_stmt_close($deleteStmt2);
+        mysqli_stmt_close($deleteStmt3);
     }
+    mysqli_stmt_close($checkStmt);
+}
+
+// Fetch users
+$userQuery = "SELECT * FROM users";
+$userResult = mysqli_query($con, $userQuery);
+if (!$userResult) {
+    error_log("Error fetching users: " . mysqli_error($con));
+    die("Error fetching users. Please check logs.");
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,16 +74,15 @@ if (isset($_GET['id'])) {
     <meta name="author" content="" />
     <title>Manage Users</title>
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" />
-    <link href="../css/styles.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js" crossorigin="anonymous"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            background-image: url('../images/volleyballform.jpg'); /* Updated path */
+            background-image: url('../images/volleyballform.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -217,7 +244,13 @@ if (isset($_GET['id'])) {
     </style>
 </head>
 <body class="sb-nav-fixed">
-    <?php include_once('includes/navbar.php'); ?>
+    <?php
+    if (!file_exists('includes/navbar.php') || !file_exists('includes/sidebar.php')) {
+        error_log("Navbar or sidebar file missing");
+        echo "<div class='alert alert-danger text-center'>Error: Navigation files missing. Please check includes directory.</div>";
+    } else {
+        include_once('includes/navbar.php');
+    ?>
     <div id="layoutSidenav">
         <?php include_once('includes/sidebar.php'); ?>
         <div id="layoutSidenav_content">
@@ -246,8 +279,7 @@ if (isset($_GET['id'])) {
                                 <tbody>
                                     <?php
                                     $cnt = 1;
-                                    $ret = mysqli_query($con, "SELECT * FROM users");
-                                    while ($row = mysqli_fetch_assoc($ret)) {
+                                    while ($row = mysqli_fetch_assoc($userResult)) {
                                     ?>
                                         <tr>
                                             <td><?= $cnt ?></td>
@@ -281,9 +313,9 @@ if (isset($_GET['id'])) {
             </main>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-    <script src="../js/scripts.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" crossorigin="anonymous"></script>
+    <?php } ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest"></script>
     <script src="../js/datatables-simple-demo.js"></script>
 </body>
 </html>

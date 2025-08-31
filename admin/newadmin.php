@@ -236,7 +236,21 @@ margin: 0;
 .custom-btn:active {
     transform: translateY(1px);
 }
-
+ h1{
+      
+            font-size: 34px;
+            color: #ffffff; 
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: right  center;        
+            background-color: rgba(0, 0, 0, 0.4); 
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            
+        
+        }
 /* Validation Error Styling */
 small {
     font-size: 12px;

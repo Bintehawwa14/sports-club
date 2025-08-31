@@ -57,6 +57,21 @@ $result = mysqli_query($con, $sql);
     .btn-detail:hover {
       background-color: #0D47A1;
     }
+     h1{
+      
+        font-size: 34px;
+        color: #ffffff; 
+        font-weight: 700;
+        margin-bottom: 30px;
+        text-align: right  center;        
+        background-color: rgba(0, 0, 0, 0.4); 
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 10px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        
+    
+    }
   </style>
 </head>
 <body class="sb-nav-fixed">
@@ -65,7 +80,7 @@ $result = mysqli_query($con, $sql);
     <?php include_once('includes/sidebar.php'); ?>
     <div id="layoutSidenav_content">
       <main class="container-fluid px-4 mt-4">
-        <h1 class="text-center text-dark mb-5">Registered Teams & Players</h1>
+        <h1>Registered Teams & Players</h1>
         <div class="row g-4">
           <?php while($row = mysqli_fetch_assoc($result)) { ?>
             <div class="col-md-4">
